@@ -46,6 +46,27 @@ class AuthManager:
         except Exception as e:
             print(f"Error removing token file: {e}")
 
+    def register_user(self, email, password, first_name="", last_name="", middle_name=""):
+        """Регистрирует нового пользователя и сразу возвращает его данные с токеном"""
+        try:
+            uid = self.db.create_user(email, password, first_name, last_name, middle_name)
+            if not uid:
+                return None
+
+            # Создаем токен и сохраняем его
+            token = self.db.create_auth_token(uid)
+            if token:
+                self.save_token(token)
+
+            # Возвращаем полные данные пользователя
+            user = self.db.get_user_by_uid(uid)
+            if user:
+                user['token'] = token
+            return user
+        except Exception as e:
+            print(f"Error during user registration: {e}")
+            return None
+
     def check_auto_login(self):
         """Проверяем сохраненный токен для автоматического входа"""
         if os.path.exists(TOKEN_FILE):
