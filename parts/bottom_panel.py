@@ -2,8 +2,8 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.properties import NumericProperty, ObjectProperty
 from kivy.graphics import Color, Rectangle
-from kivy.metrics import dp
 from square_button import SquareButton
+from ui_style import palette, scale_dp
 
 class BottomPanel(BoxLayout):
     screen_manager = ObjectProperty(None)
@@ -13,6 +13,7 @@ class BottomPanel(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.orientation = 'vertical'
+        self.button_size = scale_dp(50)
         self.create_panel()
         self.bind(size=self.update_button_size)
         self.update_button_size()
@@ -20,7 +21,7 @@ class BottomPanel(BoxLayout):
     def create_panel(self):
         # Создаем затемненный фон
         with self.canvas.before:
-            Color(0, 0, 0, 0.25)  # Затемнённый фон (25%)
+            Color(*palette['surface_alt'])
             self.bg_rect = Rectangle(pos=self.pos, size=self.size)
 
         self.bind(pos=self.update_bg_rect, size=self.update_bg_rect)
@@ -36,7 +37,7 @@ class BottomPanel(BoxLayout):
         self.buttons_layout = BoxLayout(
             orientation='horizontal',
             size_hint=(None, None),
-            spacing=dp(20)  # Расстояние между кнопками
+            spacing=scale_dp(20)  # Расстояние между кнопками
         )
 
         # Создаем кнопки используя SquareButton
@@ -86,7 +87,7 @@ class BottomPanel(BoxLayout):
             # Рассчитываем доступную ширину с учетом расстояний между кнопками
             available_width = self.width - (self.buttons_layout.spacing * 3)
             # Делим на 5 чтобы кнопки были немного меньше чем доступное пространство
-            new_button_size = max(available_width / 4.5, 40)
+            new_button_size = max(available_width / 4.5, scale_dp(40))
 
             if new_button_size != self.button_size:
                 self.button_size = new_button_size

@@ -6,12 +6,12 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.popup import Popup
-from kivy.metrics import dp
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 import threading
 
 from applications.ui import TaskCard
+from ui_style import palette, scale_dp, scale_font
 
 
 class BaseTasksTab(TabbedPanelItem):
@@ -33,7 +33,7 @@ class BaseTasksTab(TabbedPanelItem):
 
         # Фон
         with self.content_container.canvas.before:
-            Color(0.95, 0.95, 0.95, 1)
+            Color(*palette['surface_alt'])
             self.bg_rect = Rectangle(
                 pos=self.content_container.pos,
                 size=self.content_container.size
@@ -73,12 +73,12 @@ class BaseTasksTab(TabbedPanelItem):
         self.is_loading = True
         self.content_container.clear_widgets()
 
-        loading_layout = BoxLayout(orientation='vertical', padding=dp(20))
+        loading_layout = BoxLayout(orientation='vertical', padding=scale_dp(20))
 
         loading_label = Label(
             text='Загрузка...',
-            color=(0.5, 0.5, 0.5, 1),
-            font_size='18sp'
+            color=palette['text_muted'],
+            font_size=scale_font(18)
         )
 
         loading_layout.add_widget(loading_label)
@@ -95,8 +95,8 @@ class BaseTasksTab(TabbedPanelItem):
 
         empty_label = Label(
             text=message,
-            color=(0.7, 0.7, 0.7, 1),
-            font_size='16sp',
+            color=palette['text_muted'],
+            font_size=scale_font(16),
             halign='center',
             valign='middle'
         )
@@ -117,8 +117,8 @@ class BaseTasksTab(TabbedPanelItem):
         tasks_layout = GridLayout(
             cols=1,
             size_hint_y=None,
-            spacing=dp(5),
-            padding=[dp(10), dp(10), dp(10), dp(10)]
+            spacing=scale_dp(5),
+            padding=[scale_dp(10), scale_dp(10), scale_dp(10), scale_dp(10)]
         )
         tasks_layout.bind(minimum_height=tasks_layout.setter('height'))
 
@@ -126,7 +126,7 @@ class BaseTasksTab(TabbedPanelItem):
             card = self.create_task_card(task)
             tasks_layout.add_widget(card)
 
-        tasks_layout.height = len(tasks) * dp(110)
+        tasks_layout.height = len(tasks) * scale_dp(110)
         scroll_view.add_widget(tasks_layout)
         self.content_container.add_widget(scroll_view)
 
@@ -139,12 +139,12 @@ class BaseTasksTab(TabbedPanelItem):
         self.hide_loading()
         self.content_container.clear_widgets()
 
-        error_layout = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(20))
+        error_layout = BoxLayout(orientation='vertical', spacing=scale_dp(10), padding=scale_dp(20))
 
         error_label = Label(
             text=message,
-            color=(1, 0.3, 0.3, 1),
-            font_size='16sp',
+            color=palette['danger'],
+            font_size=scale_font(16),
             halign='center'
         )
         error_label.bind(size=error_label.setter('text_size'))
@@ -152,9 +152,10 @@ class BaseTasksTab(TabbedPanelItem):
         retry_btn = Button(
             text='Повторить',
             size_hint_y=None,
-            height=dp(40),
-            background_color=(0.2, 0.6, 1, 1),
-            color=(1, 1, 1, 1),
+            height=scale_dp(40),
+            background_color=palette['accent'],
+            color=palette['text_primary'],
+            font_size=scale_font(14),
             on_press=lambda x: self.safe_refresh()
         )
 
@@ -206,16 +207,16 @@ class AllTasksTab(BaseTasksTab):
         self.header_layout = BoxLayout(
             orientation='horizontal',
             size_hint_y=None,
-            height=dp(40),
-            padding=[dp(10), 0, dp(10), 0]
+            height=scale_dp(40),
+            padding=[scale_dp(10), 0, scale_dp(10), 0]
         )
 
         refresh_btn = Button(
             text='🔄 Обновить',
             size_hint_x=0.3,
-            background_color=(0.2, 0.6, 1, 0.8),
-            color=(1, 1, 1, 1),
-            font_size='14sp',
+            background_color=palette['accent'],
+            color=palette['text_primary'],
+            font_size=scale_font(14),
             on_press=lambda x: self.safe_refresh()
         )
 
@@ -318,36 +319,39 @@ class AllTasksTab(BaseTasksTab):
         from kivy.uix.modalview import ModalView
 
         modal = ModalView(size_hint=(0.8, 0.8))
-        layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(10))
+        layout = BoxLayout(orientation='vertical', padding=scale_dp(20), spacing=scale_dp(10))
 
         # Заголовок
         layout.add_widget(Label(
             text=task_details.get('title', 'Без названия'),
-            font_size='20sp',
+            font_size=scale_font(20),
             bold=True,
-            color=(0, 0, 0, 1),
+            color=palette['text_primary'],
             size_hint_y=None,
-            height=dp(40)
+            height=scale_dp(40)
         ))
 
         # Отдел и статус
-        info_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(30))
+        info_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=scale_dp(30))
         info_layout.add_widget(Label(
             text=f"Отдел: {task_details.get('department', 'Не указан')}",
-            color=(0.3, 0.3, 0.3, 1)
+            color=palette['text_muted'],
+            font_size=scale_font(14)
         ))
         info_layout.add_widget(Label(
             text=f"Статус: {task_details.get('status', 'new')}",
-            color=(0.3, 0.3, 0.3, 1)
+            color=palette['text_muted'],
+            font_size=scale_font(14)
         ))
         layout.add_widget(info_layout)
 
         # Срок
         layout.add_widget(Label(
             text=f"Дней на выполнение: {task_details.get('days', 0)}",
-            color=(0.3, 0.3, 0.3, 1),
+            color=palette['text_muted'],
+            font_size=scale_font(14),
             size_hint_y=None,
-            height=dp(25)
+            height=scale_dp(25)
         ))
 
         # Описание
@@ -355,7 +359,8 @@ class AllTasksTab(BaseTasksTab):
         scroll = KivyScrollView()
         desc_label = Label(
             text=task_details.get('description', 'Нет описания'),
-            color=(0.2, 0.2, 0.2, 1),
+            color=palette['text_primary'],
+            font_size=scale_font(14),
             size_hint_y=None,
             halign='left',
             valign='top'
@@ -370,9 +375,10 @@ class AllTasksTab(BaseTasksTab):
         close_btn = Button(
             text='Закрыть',
             size_hint_y=None,
-            height=dp(50),
-            background_color=(0.8, 0.2, 0.2, 1),
-            color=(1, 1, 1, 1),
+            height=scale_dp(50),
+            background_color=palette['danger'],
+            color=palette['text_primary'],
+            font_size=scale_font(16),
             on_press=modal.dismiss
         )
         layout.add_widget(close_btn)
@@ -395,16 +401,16 @@ class MyTasksTab(BaseTasksTab):
         self.header_layout = BoxLayout(
             orientation='horizontal',
             size_hint_y=None,
-            height=dp(40),
-            padding=[dp(10), 0, dp(10), 0]
+            height=scale_dp(40),
+            padding=[scale_dp(10), 0, scale_dp(10), 0]
         )
 
         refresh_btn = Button(
             text='🔄 Обновить',
             size_hint_x=0.3,
-            background_color=(0.2, 0.6, 1, 0.8),
-            color=(1, 1, 1, 1),
-            font_size='14sp',
+            background_color=palette['accent'],
+            color=palette['text_primary'],
+            font_size=scale_font(14),
             on_press=lambda x: self.safe_refresh()
         )
 

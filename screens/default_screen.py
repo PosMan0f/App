@@ -10,6 +10,7 @@ from kivy.uix.anchorlayout import AnchorLayout
 #sys.path.append(os.path.join(os.path.dirname(__file__), '../game'))
 #from game.game_2048 import Game2048
 from kivy.clock import Clock
+from ui_style import palette, scale_font
 
 from game.game_2048 import Game2048
 
@@ -22,7 +23,7 @@ class DefaultScreen(Screen):
     def setup_ui(self):
         """Настройка интерфейса экрана default"""
         # Добавляем ColorBlock как фон
-        self.add_widget(ColorBlock(color=(0, 0, 0, 0)))
+        self.add_widget(ColorBlock(color=palette['background']))
 
         # Создаем layout для центрирования сообщения
         message_layout = AnchorLayout(anchor_x='center', anchor_y='center')
@@ -30,8 +31,8 @@ class DefaultScreen(Screen):
         # Создаем метку для сообщения (изначально невидима)
         self.message_label = Label(
             text="Гусь\nсвинье\nне друг",
-            font_size='24sp',
-            color=(1, 1, 1, 1),
+            font_size=scale_font(24),
+            color=palette['text_primary'],
             size_hint=(None, None),
             opacity=0,  # Начальная прозрачность 0
             halign='center',  # Горизонтальное выравнивание по центру

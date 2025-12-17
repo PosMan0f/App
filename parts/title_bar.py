@@ -5,11 +5,14 @@ from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from kivy.app import App
 from kivy.properties import ObjectProperty
+from kivy.graphics import Color, Rectangle
 
 import ctypes
 import win32api
 import win32con
 import win32gui
+
+from ui_style import palette, scale_dp
 
 
 class TitleBar(BoxLayout):
@@ -18,16 +21,27 @@ class TitleBar(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.orientation = "horizontal"
-        self.padding = [5, 0, 5, 0]
+        padding = scale_dp(5)
+        self.padding = [padding, 0, padding, 0]
 
         # Размер кнопок (можно настроить под ваш дизайн)
-        self.btn_size = 32
+        self.btn_size = scale_dp(32)
+
+        with self.canvas.before:
+            Color(*palette['surface'])
+            self.bg_rect = Rectangle(pos=self.pos, size=self.size)
+        self.bind(pos=self._update_rect, size=self._update_rect)
 
         self.setup_ui()
         self.setup_drag()
 
         self._drag_pos = None
         self.bind(on_touch_down=self.start_move)
+
+    def _update_rect(self, *args):
+        if hasattr(self, 'bg_rect'):
+            self.bg_rect.pos = self.pos
+            self.bg_rect.size = self.size
 
     def setup_ui(self):
         """Создание интерфейса заголовка"""
@@ -67,7 +81,7 @@ class TitleBar(BoxLayout):
         """Правая секция с кнопками управления"""
         buttons_anchor = AnchorLayout(
             size_hint=(None, 1),
-            width=self.btn_size * 2 + 5,
+            width=self.btn_size * 2 + scale_dp(5),
             anchor_x='right',
             anchor_y='center'
         )
@@ -75,9 +89,9 @@ class TitleBar(BoxLayout):
         buttons_box = BoxLayout(
             orientation='horizontal',
             size_hint=(None, None),
-            width=self.btn_size * 2 + 5,
+            width=self.btn_size * 2 + scale_dp(5),
             height=self.btn_size,
-            spacing=5
+            spacing=scale_dp(5)
         )
 
         # Кнопка "Свернуть"

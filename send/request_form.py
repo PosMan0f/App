@@ -2,8 +2,8 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
-from kivy.metrics import dp
 from send.ui_components import *
+from ui_style import scale_dp, palette
 
 
 class RequestForm(BoxLayout):
@@ -13,13 +13,13 @@ class RequestForm(BoxLayout):
         super().__init__(**kwargs)
         self.on_submit_callback = on_submit_callback
         self.orientation = 'vertical'
-        self.padding = dp(15)
-        self.spacing = dp(10)  # Уменьшенные отступы
+        self.padding = scale_dp(15)
+        self.spacing = scale_dp(10)  # Уменьшенные отступы
 
         # Заголовок
         self.add_widget(TitleLabel(
             text='Отправка заявки',
-            height=dp(35)
+            height=scale_dp(35)
         ))
 
         # Контейнер формы с прокруткой
@@ -27,8 +27,8 @@ class RequestForm(BoxLayout):
         form_layout = GridLayout(
             cols=1,
             size_hint_y=None,
-            spacing=dp(8),  # Уменьшенные отступы между элементами
-            padding=dp(5)
+            spacing=scale_dp(8),  # Уменьшенные отступы между элементами
+            padding=scale_dp(5)
         )
         form_layout.bind(minimum_height=form_layout.setter('height'))
 
@@ -92,13 +92,13 @@ class RequestForm(BoxLayout):
     def show_status(self, message, is_error=False):
         """Показать статус"""
         self.status_label.text = message
-        self.status_label.height = dp(35)
+        self.status_label.height = scale_dp(35)
         self.status_label.opacity = 1
 
         if is_error:
-            self.status_label.color = (1, 0.3, 0.3, 1)  # Красный
+            self.status_label.color = palette['danger']  # Красный
         else:
-            self.status_label.color = (0.3, 1, 0.3, 1)  # Зеленый
+            self.status_label.color = palette['success']  # Зеленый
 
         # Автоматическое скрытие
         from kivy.clock import Clock
@@ -106,5 +106,5 @@ class RequestForm(BoxLayout):
 
     def _hide_status(self, dt):
         """Скрыть статус"""
-        self.status_label.height = dp(0)
+        self.status_label.height = scale_dp(0)
         self.status_label.opacity = 0
