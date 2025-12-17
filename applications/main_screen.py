@@ -1,7 +1,6 @@
 # applications/main_screen.py
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.tabbedpanel import TabbedPanel
-from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle
 from kivy.clock import Clock
 from kivy.uix.button import Button
@@ -10,6 +9,7 @@ from kivy.uix.label import Label
 from applications.tabs import AllTasksTab, MyTasksTab
 from applications.task_manager import TaskManager
 from applications.auto_refresher import AutoRefresher
+from ui_style import palette, scale_dp, scale_font
 
 
 class ApplicationsMainScreen(BoxLayout):
@@ -21,7 +21,7 @@ class ApplicationsMainScreen(BoxLayout):
 
         # Фон
         with self.canvas.before:
-            Color(0.57, 0.50, 0.10, 1)
+            Color(*palette['surface'])
             self.rect = Rectangle(pos=self.pos, size=self.size)
         self.bind(pos=self._update_rect, size=self._update_rect)
 
@@ -49,8 +49,8 @@ class ApplicationsMainScreen(BoxLayout):
         """Создание панели с вкладками"""
         self.tab_panel = TabbedPanel(
             do_default_tab=False,
-            tab_width=dp(120),
-            background_color=(0.8, 0.8, 0.8, 1),
+            tab_width=scale_dp(120),
+            background_color=palette['surface_alt'],
             size_hint=(1, 1)
         )
 
@@ -76,33 +76,36 @@ class ApplicationsMainScreen(BoxLayout):
         """Создание панели управления"""
         control_panel = BoxLayout(
             size_hint_y=None,
-            height=dp(50),
-            padding=dp(5),
-            spacing=dp(5)
+            height=scale_dp(50),
+            padding=scale_dp(5),
+            spacing=scale_dp(5)
         )
 
         # Кнопка обновления всех
         refresh_all_btn = Button(
             text='🔄 Обновить все',
-            background_color=(0.2, 0.6, 1, 1),
-            color=(1, 1, 1, 1),
+            background_color=palette['accent'],
+            color=palette['text_primary'],
+            font_size=scale_font(14),
             on_press=lambda x: self.refresh_all_tabs()
         )
 
         # Кнопка автообновления
         self.auto_refresh_btn = Button(
             text='▶ Авто',
-            background_color=(0.4, 0.8, 0.4, 1),
-            color=(1, 1, 1, 1),
+            background_color=palette['success'],
+            color=palette['text_primary'],
+            font_size=scale_font(14),
             on_press=self.toggle_auto_refresh
         )
 
         # Индикатор пользователя
         self.user_label = Label(
             text='Пользователь: ...',
-            color=(1, 1, 1, 1),
+            color=palette['text_primary'],
             halign='right',
-            size_hint_x=0.5
+            size_hint_x=0.5,
+            font_size=scale_font(14)
         )
 
         control_panel.add_widget(refresh_all_btn)
@@ -165,14 +168,14 @@ class ApplicationsMainScreen(BoxLayout):
         """Запуск автоматического обновления"""
         self.auto_refresher.start()
         self.auto_refresh_btn.text = '⏹ Авто'
-        self.auto_refresh_btn.background_color = (0.8, 0.2, 0.2, 1)
+        self.auto_refresh_btn.background_color = palette['danger']
         print("✅ Автообновление запущено")
 
     def stop_auto_refresh(self):
         """Остановка автоматического обновления"""
         self.auto_refresher.stop()
         self.auto_refresh_btn.text = '▶ Авто'
-        self.auto_refresh_btn.background_color = (0.4, 0.8, 0.4, 1)
+        self.auto_refresh_btn.background_color = palette['success']
         print("⏹ Автообновление остановлено")
 
     def toggle_auto_refresh(self, instance=None):

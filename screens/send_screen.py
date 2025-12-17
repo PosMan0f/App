@@ -5,6 +5,7 @@ from send.request_form import RequestForm
 from send.database import RequestDatabase
 from send.validator import RequestValidator
 from kivy.clock import Clock
+from ui_style import palette
 
 
 class SendScreen(Screen):
@@ -21,7 +22,7 @@ class SendScreen(Screen):
 
         # Устанавливаем фон
         with self.form.canvas.before:
-            Color(0.57, 0.50, 0.10, 1)
+            Color(*palette['surface'])
             self.rect = Rectangle(size=self.form.size, pos=self.form.pos)
 
         # Привязка изменения размера

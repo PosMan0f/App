@@ -64,18 +64,30 @@ class TaskManager:
         """Получение соединения с БД"""
         return sqlite3.connect('applications.db')
 
-    def get_all_tasks(self, force_refresh: bool = False) -> List[Dict]:
-        """Получение всех задач"""
+    def get_all_tasks(self, force_refresh: bool = False, department: str | None = None) -> List[Dict]:
+        """Получение всех задач, с фильтром по отделу если указан"""
         conn = self._get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
         try:
-            cursor.execute('''
+            user_department = (department or '').strip()
+            if not user_department and self.current_user:
+                user_department = (self.current_user.get('department') or '').strip()
+
+            query = '''
                 SELECT * FROM applications 
                 WHERE status = 'new' OR status IS NULL OR status = ''
-                ORDER BY created_date DESC
-            ''')
+            '''
+            params = []
+
+            if user_department:
+                query += ' AND department = ?'
+                params.append(user_department)
+
+            query += ' ORDER BY created_date DESC'
+
+            cursor.execute(query, params)
 
             tasks = []
             for row in cursor.fetchall():

@@ -1,6 +1,6 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager
-from kivy.graphics import Rectangle
+from kivy.graphics import Rectangle, Color
 from kivy.core.window import Window
 from kivy.clock import Clock
 
@@ -18,6 +18,7 @@ from screens.profile_screen import ProfileScreen
 sys.path.append(os.path.join(os.path.dirname(__file__), 'parts'))
 from parts.title_bar import TitleBar
 from parts.bottom_panel import BottomPanel
+from ui_style import palette
 
 
 class MainLayout(BoxLayout):
@@ -33,7 +34,7 @@ class MainLayout(BoxLayout):
 
     # ДОБАВИТЬ этот метод:
     def setup_window(self):
-        Window.clearcolor = (0, 0, 0, 0)
+        Window.clearcolor = palette['background']
         Clock.schedule_once(self.create_rounded_corners, 0.1)
 
     # ДОБАВИТЬ этот метод:
@@ -63,11 +64,11 @@ class MainLayout(BoxLayout):
     def setup_background(self):
         """Установка фона для всего layout"""
         with self.canvas.before:
+            Color(*palette['background'])
             # Создаем прямоугольник с фоновым изображением
             self.bg_rect = Rectangle(
                 pos=self.pos,
-                size=self.size,
-                source='images/background.png'
+                size=self.size
             )
 
         # Привязываем обновление позиции и размера фона
@@ -108,12 +109,12 @@ class MainLayout(BoxLayout):
         self.add_widget(self.title_bar)
 
         # Разделитель
-        self.add_widget(ColorBlock(color=(0, 0, 0, 1), size_hint_y=blocks["line1"]))
+        self.add_widget(ColorBlock(color=palette['surface_alt'], size_hint_y=blocks["line1"]))
 
         self.add_widget(self.screen_manager)
 
         # Разделитель
-        self.add_widget(ColorBlock(color=(0, 0, 0, 1), size_hint_y=blocks["line2"]))
+        self.add_widget(ColorBlock(color=palette['surface_alt'], size_hint_y=blocks["line2"]))
 
         self.add_widget(self.bottom_panel)
 
@@ -148,4 +149,3 @@ class MainLayout(BoxLayout):
         """Снимает выделение с кнопок в нижней панели"""
         if hasattr(self, 'bottom_panel'):
             self.bottom_panel.clear_selection()
-

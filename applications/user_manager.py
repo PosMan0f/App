@@ -63,6 +63,7 @@ class UserManager:
                     'email': user_data.get('email'),
                     'first_name': user_data.get('first_name', ''),
                     'last_name': user_data.get('last_name', ''),
+                    'department': user_data.get('department', ''),
                     'token': token
                 }
             else:
@@ -124,5 +125,6 @@ class UserManager:
             'uid': 'test_user_123',
             'email': 'test@example.com',
             'first_name': 'Тестовый',
-            'last_name': 'Пользователь'
+            'last_name': 'Пользователь',
+            'department': ''
         }
