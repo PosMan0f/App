@@ -2,8 +2,8 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.metrics import dp
 from kivy.graphics import Color, RoundedRectangle
+from ui_style import palette, scale_dp, scale_font
 
 
 class TaskCard(BoxLayout):
@@ -19,34 +19,34 @@ class TaskCard(BoxLayout):
 
         self.orientation = 'vertical'
         self.size_hint_y = None
-        self.height = dp(105)
-        self.padding = dp(8)
-        self.spacing = dp(4)
+        self.height = scale_dp(105)
+        self.padding = scale_dp(8)
+        self.spacing = scale_dp(4)
 
         # Фон карточки
         with self.canvas.before:
             status = task_data.get('status', 'new')
             if status == 'completed':
-                Color(0.8, 0.9, 0.8, 1)
+                Color(*palette['success'])
             elif status == 'assigned':
-                Color(0.9, 0.9, 0.7, 1)
+                Color(*palette['accent_muted'])
             else:
-                Color(0.95, 0.95, 0.95, 1)
+                Color(*palette['surface_alt'])
 
             self.bg_rect = RoundedRectangle(
                 pos=self.pos,
                 size=self.size,
-                radius=[dp(8), ]
+                radius=[scale_dp(8), ]
             )
 
         self.bind(pos=self._update_bg, size=self._update_bg)
 
         # Заголовок
-        title_row = BoxLayout(size_hint_y=None, height=dp(25))
+        title_row = BoxLayout(size_hint_y=None, height=scale_dp(25))
         title_label = Label(
             text=task_data['title'][:30] + ('...' if len(task_data['title']) > 30 else ''),
-            color=(0.2, 0.2, 0.2, 1),
-            font_size='15sp',
+            color=palette['text_primary'],
+            font_size=scale_font(15),
             bold=True,
             halign='left',
             size_hint_x=0.7
@@ -55,8 +55,8 @@ class TaskCard(BoxLayout):
 
         dept_label = Label(
             text=task_data['department'][:15],
-            color=(0.4, 0.4, 0.4, 1),
-            font_size='13sp',
+            color=palette['text_muted'],
+            font_size=scale_font(13),
             size_hint_x=0.3,
             halign='right'
         )
@@ -73,37 +73,37 @@ class TaskCard(BoxLayout):
 
         desc_label = Label(
             text=desc_text,
-            color=(0.4, 0.4, 0.4, 1),
-            font_size='13sp',
+            color=palette['text_muted'],
+            font_size=scale_font(13),
             size_hint_y=None,
-            height=dp(35),
+            height=scale_dp(35),
             halign='left'
         )
         desc_label.bind(size=desc_label.setter('text_size'))
         self.add_widget(desc_label)
 
         # Информация и кнопки
-        info_row = BoxLayout(size_hint_y=None, height=dp(30), spacing=dp(5))
+        info_row = BoxLayout(size_hint_y=None, height=scale_dp(30), spacing=scale_dp(5))
 
         # Дни
         days_label = Label(
             text=f"📅 {task_data['days']} дн.",
-            color=(0.3, 0.3, 0.3, 1),
-            font_size='12sp',
+            color=palette['text_primary'],
+            font_size=scale_font(12),
             size_hint_x=0.4
         )
         info_row.add_widget(days_label)
 
         # Кнопки
-        buttons_layout = BoxLayout(size_hint_x=0.6, spacing=dp(3))
+        buttons_layout = BoxLayout(size_hint_x=0.6, spacing=scale_dp(3))
 
         # Кнопка "Подробнее"
         view_btn = Button(
             text='👁',
             size_hint_x=0.3,
-            background_color=(0.3, 0.5, 0.8, 1),
-            color=(1, 1, 1, 1),
-            font_size='12sp'
+            background_color=palette['accent'],
+            color=palette['text_primary'],
+            font_size=scale_font(12)
         )
         view_btn.bind(on_press=lambda x: self._on_view())
         buttons_layout.add_widget(view_btn)
@@ -113,9 +113,9 @@ class TaskCard(BoxLayout):
             accept_btn = Button(
                 text='✅',
                 size_hint_x=0.3,
-                background_color=(0.4, 0.7, 0.4, 1),
-                color=(1, 1, 1, 1),
-                font_size='12sp'
+                background_color=palette['success'],
+                color=palette['text_primary'],
+                font_size=scale_font(12)
             )
             accept_btn.bind(on_press=lambda x: self._on_accept())
             buttons_layout.add_widget(accept_btn)
@@ -123,9 +123,9 @@ class TaskCard(BoxLayout):
             complete_btn = Button(
                 text='🏁',
                 size_hint_x=0.3,
-                background_color=(0.8, 0.4, 0.4, 1),
-                color=(1, 1, 1, 1),
-                font_size='12sp'
+                background_color=palette['danger'],
+                color=palette['text_primary'],
+                font_size=scale_font(12)
             )
             complete_btn.bind(on_press=lambda x: self._on_complete())
             buttons_layout.add_widget(complete_btn)

@@ -71,11 +71,23 @@ class TaskManager:
         cursor = conn.cursor()
 
         try:
-            cursor.execute('''
+            user_department = None
+            if self.current_user:
+                user_department = (self.current_user.get('department') or '').strip()
+
+            query = '''
                 SELECT * FROM applications 
                 WHERE status = 'new' OR status IS NULL OR status = ''
-                ORDER BY created_date DESC
-            ''')
+            '''
+            params = []
+
+            if user_department:
+                query += ' AND department = ?'
+                params.append(user_department)
+
+            query += ' ORDER BY created_date DESC'
+
+            cursor.execute(query, params)
 
             tasks = []
             for row in cursor.fetchall():
