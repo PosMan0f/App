@@ -198,6 +198,8 @@ class AllTasksTab(BaseTasksTab):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.selected_department = None
+        self.available_departments = ['IT-отдел', 'Юридический отдел', 'HR-отдел']
         self.setup_ui()
         Clock.schedule_once(lambda dt: self.refresh(), 0.5)
 
@@ -211,6 +213,17 @@ class AllTasksTab(BaseTasksTab):
             padding=[scale_dp(10), 0, scale_dp(10), 0]
         )
 
+        self.department_spinner = Spinner(
+            text='Выберите отдел',
+            values=self.available_departments,
+            size_hint_x=0.7,
+            height=scale_dp(34),
+            background_color=palette['surface_alt'],
+            color=palette['text_primary'],
+            font_size=scale_font(14)
+        )
+        self.department_spinner.bind(text=self._on_department_changed)
+
         refresh_btn = Button(
             text='🔄 Обновить',
             size_hint_x=0.3,
@@ -220,24 +233,59 @@ class AllTasksTab(BaseTasksTab):
             on_press=lambda x: self.safe_refresh()
         )
 
+        self.header_layout.add_widget(self.department_spinner)
         self.header_layout.add_widget(refresh_btn)
         self.header_layout.add_widget(Label())  # Заполнитель
 
         self.content.add_widget(self.header_layout)
 
+    def _on_department_changed(self, instance, value):
+        self.selected_department = value if value != 'Выберите отдел' else None
+        self.safe_refresh()
+
+    def _ensure_department_selected(self):
+        """Выбираем отдел из профиля пользователя, если он есть"""
+        if self.selected_department or not self.task_manager:
+            return
+
+        user = self.task_manager.current_user
+        if not user:
+            return
+
+        department = (user.get('department') or '').strip()
+        if not department:
+            return
+
+        if department not in self.available_departments:
+            self.available_departments.append(department)
+            self.department_spinner.values = self.available_departments
+
+        self.selected_department = department
+        self.department_spinner.text = department
+
     def refresh(self, force: bool = False):
         """Загрузка и отображение всех задач"""
         print(f"🔄 Обновление 'Все задачи' (force={force})...")
 
-        if not self.task_manager or not self.task_manager.current_user:
-            self.show_empty("Войдите в систему для просмотра задач")
+        if not self.task_manager:
+            self.show_empty("Нет подключения к менеджеру задач")
+            return
+
+        # Автоподстановка отдела из профиля
+        self._ensure_department_selected()
+
+        if not self.selected_department:
+            self.show_empty("Выберите отдел, чтобы увидеть задачи")
             return
 
         self.show_loading()
 
         def load_tasks():
             try:
-                tasks = self.task_manager.get_all_tasks(force_refresh=force)
+                tasks = self.task_manager.get_all_tasks(
+                    force_refresh=force,
+                    department=self.selected_department
+                )
                 Clock.schedule_once(lambda dt: self._display_tasks(tasks))
             except Exception as e:
                 print(f"❌ Ошибка при загрузке задач: {e}")

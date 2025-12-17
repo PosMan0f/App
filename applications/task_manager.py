@@ -64,8 +64,8 @@ class TaskManager:
         """Получение соединения с БД"""
         return sqlite3.connect('applications.db')
 
-    def get_all_tasks(self, force_refresh: bool = False) -> List[Dict]:
-        """Получение всех задач"""
+    def get_all_tasks(self, force_refresh: bool = False, department: str | None = None) -> List[Dict]:
+        """Получение всех задач, с фильтром по отделу если указан"""
         conn = self._get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
