@@ -50,9 +50,9 @@ class TaskManager:
         if user:
             self.current_user = user
             print(f"✅ Пользователь: {user['uid']}")
-        else:
-            self.current_user = self.user_manager.get_test_user()
-            print(f"⚠ Тестовый пользователь: {self.current_user['uid']}")
+        #else:
+            #self.current_user = self.user_manager.get_test_user()
+            #print(f"⚠ Тестовый пользователь: {self.current_user['uid']}")
 
         self._notify_listeners('user_changed')
 

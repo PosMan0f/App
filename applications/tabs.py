@@ -8,6 +8,7 @@ from kivy.uix.button import Button
 from kivy.uix.popup import Popup
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
+from kivy.uix.spinner import Spinner
 import threading
 
 from applications.ui import TaskCard
@@ -384,12 +385,12 @@ class AllTasksTab(BaseTasksTab):
         info_layout.add_widget(Label(
             text=f"Отдел: {task_details.get('department', 'Не указан')}",
             color=palette['text_muted'],
-            font_size=scale_font(14)
+            font_size=scale_font(30)
         ))
         info_layout.add_widget(Label(
             text=f"Статус: {task_details.get('status', 'new')}",
             color=palette['text_muted'],
-            font_size=scale_font(14)
+            font_size=scale_font(30)
         ))
         layout.add_widget(info_layout)
 
@@ -397,7 +398,7 @@ class AllTasksTab(BaseTasksTab):
         layout.add_widget(Label(
             text=f"Дней на выполнение: {task_details.get('days', 0)}",
             color=palette['text_muted'],
-            font_size=scale_font(14),
+            font_size=scale_font(30),
             size_hint_y=None,
             height=scale_dp(25)
         ))
@@ -408,7 +409,7 @@ class AllTasksTab(BaseTasksTab):
         desc_label = Label(
             text=task_details.get('description', 'Нет описания'),
             color=palette['text_primary'],
-            font_size=scale_font(14),
+            font_size=scale_font(30),
             size_hint_y=None,
             halign='left',
             valign='top'
@@ -426,7 +427,7 @@ class AllTasksTab(BaseTasksTab):
             height=scale_dp(50),
             background_color=palette['danger'],
             color=palette['text_primary'],
-            font_size=scale_font(16),
+            font_size=scale_font(30),
             on_press=modal.dismiss
         )
         layout.add_widget(close_btn)

@@ -19,7 +19,7 @@ class TaskCard(BoxLayout):
 
         self.orientation = 'vertical'
         self.size_hint_y = None
-        self.height = scale_dp(105)
+        self.height = scale_dp(170)
         self.padding = scale_dp(8)
         self.spacing = scale_dp(4)
 
@@ -46,7 +46,7 @@ class TaskCard(BoxLayout):
         title_label = Label(
             text=task_data['title'][:30] + ('...' if len(task_data['title']) > 30 else ''),
             color=palette['text_primary'],
-            font_size=scale_font(15),
+            font_size=scale_font(39),
             bold=True,
             halign='left',
             size_hint_x=0.7
@@ -56,7 +56,7 @@ class TaskCard(BoxLayout):
         dept_label = Label(
             text=task_data['department'][:15],
             color=palette['text_muted'],
-            font_size=scale_font(13),
+            font_size=scale_font(26),
             size_hint_x=0.3,
             halign='right'
         )
@@ -74,7 +74,7 @@ class TaskCard(BoxLayout):
         desc_label = Label(
             text=desc_text,
             color=palette['text_muted'],
-            font_size=scale_font(13),
+            font_size=scale_font(26),
             size_hint_y=None,
             height=scale_dp(35),
             halign='left'
@@ -89,7 +89,7 @@ class TaskCard(BoxLayout):
         days_label = Label(
             text=f"📅 {task_data['days']} дн.",
             color=palette['text_primary'],
-            font_size=scale_font(12),
+            font_size=scale_font(24),
             size_hint_x=0.4
         )
         info_row.add_widget(days_label)
@@ -103,7 +103,7 @@ class TaskCard(BoxLayout):
             size_hint_x=0.3,
             background_color=palette['accent'],
             color=palette['text_primary'],
-            font_size=scale_font(12)
+            font_size=scale_font(24)
         )
         view_btn.bind(on_press=lambda x: self._on_view())
         buttons_layout.add_widget(view_btn)
@@ -115,7 +115,7 @@ class TaskCard(BoxLayout):
                 size_hint_x=0.3,
                 background_color=palette['success'],
                 color=palette['text_primary'],
-                font_size=scale_font(12)
+                font_size=scale_font(24)
             )
             accept_btn.bind(on_press=lambda x: self._on_accept())
             buttons_layout.add_widget(accept_btn)
@@ -125,7 +125,7 @@ class TaskCard(BoxLayout):
                 size_hint_x=0.3,
                 background_color=palette['danger'],
                 color=palette['text_primary'],
-                font_size=scale_font(12)
+                font_size=scale_font(24)
             )
             complete_btn.bind(on_press=lambda x: self._on_complete())
             buttons_layout.add_widget(complete_btn)
