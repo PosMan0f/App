@@ -55,9 +55,15 @@ class AssignedTasksDB:
             cursor = conn.cursor()
 
             # Проверяем, не назначена ли уже задача
-            cursor.execute('SELECT 1 FROM assigned_tasks WHERE task_id = ?', (task_id,))
-            if cursor.fetchone():
-                print(f"Задача {task_id} уже назначена")
+            cursor.execute('SELECT user_id, status FROM assigned_tasks WHERE task_id = ?', (task_id,))
+            existing = cursor.fetchone()
+            if existing:
+                if existing[0] == user_id:
+                    # Уже назначено текущему пользователю — считаем успехом
+                    conn.close()
+                    return True
+
+                print(f"Задача {task_id} уже назначена пользователю {existing[0]}")
                 conn.close()
                 return False
 
@@ -74,6 +80,19 @@ class AssignedTasksDB:
 
         except Exception as e:
             print(f"Ошибка при назначении задачи: {e}")
+            return False
+
+    def remove_assignment(self, task_id: int) -> bool:
+        """Удаление записи о назначении задачи (для отката при ошибках)"""
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM assigned_tasks WHERE task_id = ?', (task_id,))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Ошибка при удалении назначения задачи: {e}")
             return False
 
     def get_user_tasks(self, user_id: str) -> list:

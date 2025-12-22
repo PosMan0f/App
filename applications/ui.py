@@ -113,7 +113,7 @@ class TaskCard(BoxLayout):
         # Кнопка "Подробнее"
         view_btn = Button(
             text='Подробнее',
-            size_hint_x=0.45,
+            size_hint_x=0.3,
             background_color=palette['accent'],
             background_normal='',
             background_down='',
@@ -126,8 +126,8 @@ class TaskCard(BoxLayout):
         # Кнопка "Принять" или "Завершить"
         if show_accept:
             accept_btn = Button(
-                text='Принять',
-                size_hint_x=0.45,
+                text='Принять задачу',
+                size_hint_x=0.3,
                 background_color=palette['success'],
                 background_normal='',
                 background_down='',

@@ -385,12 +385,12 @@ class AllTasksTab(BaseTasksTab):
         info_layout.add_widget(Label(
             text=f"Отдел: {task_details.get('department', 'Не указан')}",
             color=palette['text_muted'],
-            font_size=scale_font(32)
+            font_size=scale_font(16)
         ))
         info_layout.add_widget(Label(
             text=f"Статус: {task_details.get('status', 'new')}",
             color=palette['text_muted'],
-            font_size=scale_font(32)
+            font_size=scale_font(16)
         ))
         layout.add_widget(info_layout)
 
@@ -398,7 +398,7 @@ class AllTasksTab(BaseTasksTab):
         layout.add_widget(Label(
             text=f"Дней на выполнение: {task_details.get('days', 0)}",
             color=palette['text_muted'],
-            font_size=scale_font(32),
+            font_size=scale_font(16),
             size_hint_y=None,
             height=scale_dp(25)
         ))
@@ -409,7 +409,7 @@ class AllTasksTab(BaseTasksTab):
         desc_label = Label(
             text=task_details.get('description', 'Нет описания'),
             color=palette['text_primary'],
-            font_size=scale_font(32),
+            font_size=scale_font(16),
             size_hint_y=None,
             halign='left',
             valign='top'
@@ -430,7 +430,7 @@ class AllTasksTab(BaseTasksTab):
             background_normal='',
             background_down='',
             color=palette['text_primary'],
-            font_size=scale_font(36),
+            font_size=scale_font(18),
             on_press=modal.dismiss
         )
         layout.add_widget(close_btn)

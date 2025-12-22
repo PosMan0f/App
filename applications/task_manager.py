@@ -199,6 +199,11 @@ class TaskManager:
 
         except Exception as e:
             print(f"Ошибка: {e}")
+            # Откат назначения при ошибке обновления основной таблицы
+            try:
+                self.assigned_db.remove_assignment(task_id)
+            except Exception as cleanup_error:
+                print(f"Не удалось откатить назначение задачи {task_id}: {cleanup_error}")
             return False
 
     def complete_task(self, task_id: int) -> bool:
