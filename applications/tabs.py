@@ -8,24 +8,10 @@ from kivy.uix.button import Button
 from kivy.uix.popup import Popup
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
-from kivy.uix.spinner import Spinner, SpinnerOption
 import threading
 
 from applications.ui import TaskCard
 from ui_style import palette, scale_dp, scale_font
-
-
-class ThemedSpinnerOption(SpinnerOption):
-    def __init__(self, **kwargs):
-        defaults = {
-            'background_normal': '',
-            'background_down': '',
-            'background_color': palette['surface_alt'],
-            'color': palette['text_primary'],
-            'font_size': scale_font(14)
-        }
-        defaults.update(kwargs)
-        super().__init__(**defaults)
 
 
 class BaseTasksTab(TabbedPanelItem):
@@ -102,7 +88,7 @@ class BaseTasksTab(TabbedPanelItem):
         """Скрыть индикатор загрузки"""
         self.is_loading = False
 
-    def show_empty(self, message="Нет данных"):
+    def show_empty(self, message="Нет данных", font_size: float | None = None):
         """Показать сообщение об отсутствии данных"""
         self.hide_loading()
         self.content_container.clear_widgets()
@@ -110,7 +96,7 @@ class BaseTasksTab(TabbedPanelItem):
         empty_label = Label(
             text=message,
             color=palette['text_muted'],
-            font_size=scale_font(16),
+            font_size=scale_font(font_size or 16),
             halign='center',
             valign='middle'
         )
@@ -213,13 +199,11 @@ class AllTasksTab(BaseTasksTab):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.selected_department = None
-        self.available_departments = ['IT-отдел', 'Юридический отдел', 'HR-отдел']
         self.setup_ui()
         Clock.schedule_once(lambda dt: self.refresh(), 0.5)
 
     def setup_ui(self):
         """Настройка UI"""
-        # Кнопка обновления
         self.header_layout = BoxLayout(
             orientation='horizontal',
             size_hint_y=None,
@@ -227,22 +211,18 @@ class AllTasksTab(BaseTasksTab):
             padding=[scale_dp(10), 0, scale_dp(10), 0]
         )
 
-        self.department_spinner = Spinner(
-            text='Выберите отдел',
-            values=self.available_departments,
-            size_hint_x=0.7,
-            height=scale_dp(34),
-            background_color=palette['surface_alt'],
-            background_normal='',
-            background_down='',
+        self.department_label = Label(
+            text='',
             color=palette['text_primary'],
             font_size=scale_font(14),
-            option_cls=ThemedSpinnerOption
+            halign='left',
+            valign='middle',
+            size_hint_x=0.7
         )
-        self.department_spinner.bind(text=self._on_department_changed)
+        self.department_label.bind(size=self.department_label.setter('text_size'))
 
         refresh_btn = Button(
-            text='🔄 Обновить',
+            text='Обновить',
             size_hint_x=0.3,
             background_color=palette['accent'],
             background_normal='',
@@ -252,15 +232,11 @@ class AllTasksTab(BaseTasksTab):
             on_press=lambda x: self.safe_refresh()
         )
 
-        self.header_layout.add_widget(self.department_spinner)
+        self.header_layout.add_widget(self.department_label)
         self.header_layout.add_widget(refresh_btn)
         self.header_layout.add_widget(Label())  # Заполнитель
 
         self.content.add_widget(self.header_layout)
-
-    def _on_department_changed(self, instance, value):
-        self.selected_department = value if value != 'Выберите отдел' else None
-        self.safe_refresh()
 
     def _ensure_department_selected(self):
         """Выбираем отдел из профиля пользователя, если он есть"""
@@ -275,12 +251,8 @@ class AllTasksTab(BaseTasksTab):
         if not department:
             return
 
-        if department not in self.available_departments:
-            self.available_departments.append(department)
-            self.department_spinner.values = self.available_departments
-
         self.selected_department = department
-        self.department_spinner.text = department
+        self.department_label.text = f"Отдел: {department}"
 
     def refresh(self, force: bool = False):
         """Загрузка и отображение всех задач"""
@@ -289,14 +261,19 @@ class AllTasksTab(BaseTasksTab):
         if not self.task_manager:
             self.show_empty("Нет подключения к менеджеру задач")
             return
+        if not self.task_manager.current_user:
+            self.selected_department = None
+            self.department_label.text = "Авторизация требуется"
+            self.show_empty("Авторизуйтесь для просмотра задач", font_size=18)
+            return
 
         # Автоподстановка отдела из профиля
         self._ensure_department_selected()
 
         if not self.selected_department:
-            self.show_empty("Выберите отдел, чтобы увидеть задачи")
+            self.department_label.text = "Укажите отдел в профиле"
+            self.show_empty("Заполните отдел в профиле", font_size=18)
             return
-
         self.show_loading()
 
         def load_tasks():
@@ -385,13 +362,18 @@ class AllTasksTab(BaseTasksTab):
 
         from kivy.uix.modalview import ModalView
 
-        modal = ModalView(size_hint=(0.8, 0.8))
+        modal = ModalView(size_hint=(0.8, 0.8), background_color=palette['surface'], background='')
         layout = BoxLayout(orientation='vertical', padding=scale_dp(20), spacing=scale_dp(10))
+        with layout.canvas.before:
+            Color(*palette['background'])
+            bg_rect = Rectangle(pos=layout.pos, size=layout.size)
+        layout.bind(pos=lambda *args: setattr(bg_rect, 'pos', layout.pos),
+                    size=lambda *args: setattr(bg_rect, 'size', layout.size))
 
         # Заголовок
         layout.add_widget(Label(
             text=task_details.get('title', 'Без названия'),
-            font_size=scale_font(20),
+            font_size=scale_font(40),
             bold=True,
             color=palette['text_primary'],
             size_hint_y=None,
@@ -403,12 +385,12 @@ class AllTasksTab(BaseTasksTab):
         info_layout.add_widget(Label(
             text=f"Отдел: {task_details.get('department', 'Не указан')}",
             color=palette['text_muted'],
-            font_size=scale_font(30)
+            font_size=scale_font(32)
         ))
         info_layout.add_widget(Label(
             text=f"Статус: {task_details.get('status', 'new')}",
             color=palette['text_muted'],
-            font_size=scale_font(30)
+            font_size=scale_font(32)
         ))
         layout.add_widget(info_layout)
 
@@ -416,7 +398,7 @@ class AllTasksTab(BaseTasksTab):
         layout.add_widget(Label(
             text=f"Дней на выполнение: {task_details.get('days', 0)}",
             color=palette['text_muted'],
-            font_size=scale_font(30),
+            font_size=scale_font(32),
             size_hint_y=None,
             height=scale_dp(25)
         ))
@@ -427,12 +409,13 @@ class AllTasksTab(BaseTasksTab):
         desc_label = Label(
             text=task_details.get('description', 'Нет описания'),
             color=palette['text_primary'],
-            font_size=scale_font(30),
+            font_size=scale_font(32),
             size_hint_y=None,
             halign='left',
             valign='top'
         )
         desc_label.bind(
+            width=lambda instance, value: setattr(desc_label, 'text_size', (value, None)),
             texture_size=lambda instance, value: setattr(desc_label, 'height', desc_label.texture_size[1])
         )
         scroll.add_widget(desc_label)
@@ -447,7 +430,7 @@ class AllTasksTab(BaseTasksTab):
             background_normal='',
             background_down='',
             color=palette['text_primary'],
-            font_size=scale_font(30),
+            font_size=scale_font(36),
             on_press=modal.dismiss
         )
         layout.add_widget(close_btn)
@@ -475,7 +458,7 @@ class MyTasksTab(BaseTasksTab):
         )
 
         refresh_btn = Button(
-            text='🔄 Обновить',
+            text='Обновить',
             size_hint_x=0.3,
             background_color=palette['accent'],
             color=palette['text_primary'],
@@ -493,7 +476,7 @@ class MyTasksTab(BaseTasksTab):
         print(f"🔄 Обновление 'Мои задачи' (force={force})...")
 
         if not self.task_manager or not self.task_manager.current_user:
-            self.show_empty("Войдите в систему для просмотра ваших задач")
+            self.show_empty("Авторизуйтесь для просмотра ваших задач", font_size=18)
             return
 
         self.show_loading()
