@@ -58,36 +58,69 @@ class TaskManager:
 
     def _initialize_tables(self):
         """Инициализация таблиц"""
-        pass  # База уже инициализирована
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        # Создаём таблицу, если её ещё нет
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS applications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                department TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                days INTEGER NOT NULL,
+                created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status TEXT DEFAULT 'new'
+            )
+        ''')
+
+        # Гарантируем наличие служебных колонок для назначения и завершения задач
+        existing_columns = {
+            column[1] for column in cursor.execute('PRAGMA table_info(applications)').fetchall()
+        }
+
+        required_columns = {
+            'assigned_to': 'TEXT',
+            'assigned_date': 'TIMESTAMP',
+            'completed_date': 'TIMESTAMP'
+        }
+
+        for column_name, column_type in required_columns.items():
+            if column_name not in existing_columns:
+                cursor.execute(f'ALTER TABLE applications ADD COLUMN {column_name} {column_type}')
+
+        conn.commit()
+        conn.close()
 
     def _get_connection(self):
         """Получение соединения с БД"""
         return sqlite3.connect('applications.db')
 
     def get_all_tasks(self, force_refresh: bool = False, department: str | None = None) -> List[Dict]:
-        """Получение всех задач, с фильтром по отделу если указан"""
+        """Получение всех задач строго по отделу пользователя.
+
+        department параметр игнорируется — отдел берётся из профиля текущего пользователя.
+        """
+        if not self.current_user:
+            return []
+
+        user_department = (self.current_user.get('department') or '').strip()
+        if not user_department:
+            return []
+
         conn = self._get_connection()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
         try:
-            user_department = None
-            if self.current_user:
-                user_department = (self.current_user.get('department') or '').strip()
-
             query = '''
-                SELECT * FROM applications 
-                WHERE status = 'new' OR status IS NULL OR status = ''
+                SELECT * FROM applications
+                WHERE (status = 'new' OR status IS NULL OR status = '')
+                  AND department = ?
+                ORDER BY created_date DESC
             '''
-            params = []
 
-            if user_department:
-                query += ' AND department = ?'
-                params.append(user_department)
-
-            query += ' ORDER BY created_date DESC'
-
-            cursor.execute(query, params)
+            cursor.execute(query, [user_department])
 
             tasks = []
             for row in cursor.fetchall():
@@ -198,6 +231,11 @@ class TaskManager:
 
         except Exception as e:
             print(f"Ошибка: {e}")
+            # Откат назначения при ошибке обновления основной таблицы
+            try:
+                self.assigned_db.remove_assignment(task_id)
+            except Exception as cleanup_error:
+                print(f"Не удалось откатить назначение задачи {task_id}: {cleanup_error}")
             return False
 
     def complete_task(self, task_id: int) -> bool:

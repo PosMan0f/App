@@ -91,7 +91,7 @@ class ApplicationsMainScreen(BoxLayout):
 
         # Кнопка обновления всех
         refresh_all_btn = Button(
-            text='🔄 Обновить все',
+            text='Обновить все',
             background_color=palette['accent'],
             background_normal='',
             background_down='',
@@ -102,7 +102,7 @@ class ApplicationsMainScreen(BoxLayout):
 
         # Кнопка автообновления
         self.auto_refresh_btn = Button(
-            text='▶ Авто',
+            text='Авто',
             background_color=palette['success'],
             background_normal='',
             background_down='',
@@ -113,10 +113,10 @@ class ApplicationsMainScreen(BoxLayout):
 
         # Индикатор пользователя
         self.user_label = Label(
-            text='Пользователь: ...',
+            text='...',
             color=palette['text_primary'],
             halign='right',
-            size_hint_x=0.5,
+            size_hint_x=0.45,
             font_size=scale_font(14)
         )
 
@@ -143,9 +143,9 @@ class ApplicationsMainScreen(BoxLayout):
         """Проверка и отображение информации о пользователе"""
         if self.task_manager.current_user:
             user = self.task_manager.current_user
-            self.user_label.text = f"👤 {user['uid'][:10]}..."
+            self.user_label.text = f"{user['uid'][:10]}..."
         else:
-            self.user_label.text = "👤 Не авторизован"
+            self.user_label.text = "Авторизуйтесь"
 
     def on_enter(self):
         """При входе на экран"""
@@ -166,8 +166,11 @@ class ApplicationsMainScreen(BoxLayout):
             print("🔄 Обновление вкладки 'Мои задачи'...")
             self.my_tasks_tab.safe_refresh()
 
-        # Запускаем автообновление
-        self.start_auto_refresh()
+        # Запускаем автообновление только для авторизованного пользователя
+        if self.task_manager.current_user:
+            self.start_auto_refresh()
+        else:
+            self.stop_auto_refresh()
 
     def on_leave(self):
         """При выходе с экрана"""
@@ -179,14 +182,14 @@ class ApplicationsMainScreen(BoxLayout):
     def start_auto_refresh(self):
         """Запуск автоматического обновления"""
         self.auto_refresher.start()
-        self.auto_refresh_btn.text = '⏹ Авто'
+        self.auto_refresh_btn.text = 'Остановить авто'
         self.auto_refresh_btn.background_color = palette['danger']
         print("✅ Автообновление запущено")
 
     def stop_auto_refresh(self):
         """Остановка автоматического обновления"""
         self.auto_refresher.stop()
-        self.auto_refresh_btn.text = '▶ Авто'
+        self.auto_refresh_btn.text = 'Авто'
         self.auto_refresh_btn.background_color = palette['success']
         print("⏹ Автообновление остановлено")
 

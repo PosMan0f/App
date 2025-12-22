@@ -5,6 +5,8 @@ from kivy.uix.button import Button
 from kivy.uix.popup import Popup
 from kivy.core.text import LabelBase
 from kivy.metrics import sp
+from kivy.clock import Clock
+from kivy.graphics import Color, RoundedRectangle
 from datetime import datetime
 import re
 import json
@@ -14,6 +16,7 @@ from screens.color_block import ColorBlock
 from .database import Database
 from .auth_manager import AuthManager
 from .session_manager import session_manager
+from ui_style import palette, scale_dp, scale_font
 
 # Регистрируем шрифт Times New Roman
 try:
@@ -35,6 +38,8 @@ class ProfileLogic:
         self.auth = AuthManager()
         self.current_user = None
         self.is_locked = False
+        self.notice_bar = None
+        self.notice_event = None
 
         # Инициализируем шрифты
         self.register_fonts()
@@ -420,7 +425,10 @@ class ProfileLogic:
                 text='Сохранить изменения',
                 size_hint_y=None,
                 height=50,
-                background_color=(0.2, 0.6, 1, 0.8),
+                background_color=palette['accent'],
+                background_normal='',
+                background_down='',
+                color=palette['text_primary'],
                 font_name='TimesNewRoman'
             )
             save_btn.bind(on_press=self.save_profile)
@@ -431,7 +439,10 @@ class ProfileLogic:
                 text='Сменить пароль',
                 size_hint_y=None,
                 height=50,
-                background_color=(0.4, 0.8, 0.4, 0.8),
+                background_color=palette['success'],
+                background_normal='',
+                background_down='',
+                color=palette['text_primary'],
                 font_name='TimesNewRoman'
             )
             change_pass_btn.bind(on_press=self.show_change_password)
@@ -442,7 +453,10 @@ class ProfileLogic:
             text='Выйти',
             size_hint_y=None,
             height=50,
-            background_color=(0.8, 0.2, 0.2, 0.8),
+            background_color=palette['danger'],
+            background_normal='',
+            background_down='',
+            color=palette['text_primary'],
             font_name='TimesNewRoman'
         )
         logout_btn.bind(on_press=self.logout)
@@ -540,8 +554,10 @@ class ProfileLogic:
             values=('Не выбран', 'IT-отдел', 'Юридический отдел', 'HR-отдел'),
             size_hint_y=None,
             height=40,
-            background_color=(1, 1, 1, 0.1),
-            color=(1, 1, 1, 1),
+            background_color=palette['surface'],
+            background_normal='',
+            background_down='',
+            color=palette['text_primary'],
             font_name='TimesNewRoman'
         )
         fields['department'].disabled = self.is_locked
@@ -596,7 +612,10 @@ class ProfileLogic:
 
         change_btn = Button(
             text='Изменить',
-            background_color=(0.2, 0.6, 1, 1),
+            background_color=palette['accent'],
+            background_normal='',
+            background_down='',
+            color=palette['text_primary'],
             font_name='TimesNewRoman'
         )
 
@@ -628,7 +647,10 @@ class ProfileLogic:
 
         cancel_btn = Button(
             text='Отмена',
-            background_color=(0.8, 0.2, 0.2, 1),
+            background_color=palette['danger'],
+            background_normal='',
+            background_down='',
+            color=palette['text_primary'],
             font_name='TimesNewRoman'
         )
         cancel_btn.bind(on_press=lambda x: popup.dismiss())
@@ -682,9 +704,9 @@ class ProfileLogic:
 
         if success:
             self.current_user = self.db.get_user_by_uid(self.current_user['uid'])
-            self.show_message('Успех', 'Данные сохранены')
+            self.show_notice('Данные успешно сохранены')
         else:
-            self.show_message('Ошибка', 'Не удалось сохранить данные')
+            self.show_notice('Не удалось сохранить данные', kind='error')
 
     def logout(self, instance):
         """Выход из аккаунта"""
@@ -707,6 +729,48 @@ class ProfileLogic:
             title_font='TimesNewRoman'
         )
         popup.open()
+
+    def _clear_notice(self, *args):
+        if self.notice_event:
+            Clock.unschedule(self.notice_event)
+            self.notice_event = None
+        if self.notice_bar and self.notice_bar.parent:
+            self.content_container.remove_widget(self.notice_bar)
+        self.notice_bar = None
+
+    def show_notice(self, message: str, kind: str = 'success'):
+        """Небольшое уведомление внизу экрана вместо всплывающего окна."""
+        self._clear_notice()
+
+        base_color = palette['success'] if kind == 'success' else palette['danger']
+        self.notice_bar = BoxLayout(
+            size_hint_y=None,
+            height=scale_dp(48),
+            padding=[scale_dp(12), scale_dp(8)],
+            spacing=scale_dp(8)
+        )
+
+        with self.notice_bar.canvas.before:
+            Color(*base_color)
+            bg = RoundedRectangle(pos=self.notice_bar.pos, size=self.notice_bar.size, radius=[scale_dp(8)] * 4)
+        self.notice_bar.bind(
+            pos=lambda *args: setattr(bg, 'pos', self.notice_bar.pos),
+            size=lambda *args: setattr(bg, 'size', self.notice_bar.size)
+        )
+
+        notice_label = Label(
+            text=message,
+            color=palette['text_primary'],
+            font_size=scale_font(16),
+            halign='center',
+            valign='middle'
+        )
+        notice_label.bind(size=lambda inst, val: setattr(inst, 'text_size', val))
+
+        self.notice_bar.add_widget(notice_label)
+        self.content_container.add_widget(self.notice_bar)
+
+        self.notice_event = Clock.schedule_once(self._clear_notice, 2.5)
 
     def on_enter(self):
         """Вызывается при переходе на экран"""
