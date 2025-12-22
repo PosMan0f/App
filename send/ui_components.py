@@ -1,9 +1,24 @@
 # send/ui_components.py
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
-from kivy.uix.spinner import Spinner
+from kivy.uix.spinner import Spinner, SpinnerOption
 from kivy.uix.button import Button
 from ui_style import palette, scale_dp, scale_font
+
+
+class ThemedSpinnerOption(SpinnerOption):
+    """Единый стиль для выпадающих пунктов"""
+
+    def __init__(self, **kwargs):
+        defaults = {
+            'background_normal': '',
+            'background_down': '',
+            'background_color': palette['surface_alt'],
+            'color': palette['text_primary'],
+            'font_size': scale_font(15)
+        }
+        defaults.update(kwargs)
+        super().__init__(**defaults)
 
 class BaseLabel(Label):
     """Базовый класс для всех меток"""
@@ -75,8 +90,11 @@ class DepartmentSpinner(Spinner):
             'size_hint': (1, None),
             'height': scale_dp(45),
             'background_color': palette['surface_alt'],
+            'background_normal': '',
+            'background_down': '',
             'color': palette['text_primary'],
-            'font_size': scale_font(15)
+            'font_size': scale_font(15),
+            'option_cls': ThemedSpinnerOption
         }
         defaults.update(kwargs)
         super().__init__(**defaults)
@@ -88,6 +106,8 @@ class SubmitButton(Button):
             'size_hint': (1, None),
             'height': scale_dp(50),
             'background_color': palette['accent'],
+            'background_normal': '',
+            'background_down': '',
             'color': palette['text_primary'],
             'font_size': scale_font(18),
             'bold': True
