@@ -113,10 +113,10 @@ class ApplicationsMainScreen(BoxLayout):
 
         # Индикатор пользователя
         self.user_label = Label(
-            text='Пользователь: ...',
+            text='...',
             color=palette['text_primary'],
             halign='right',
-            size_hint_x=0.5,
+            size_hint_x=0.45,
             font_size=scale_font(14)
         )
 
@@ -143,7 +143,7 @@ class ApplicationsMainScreen(BoxLayout):
         """Проверка и отображение информации о пользователе"""
         if self.task_manager.current_user:
             user = self.task_manager.current_user
-            self.user_label.text = f"Пользователь: {user['uid'][:10]}..."
+            self.user_label.text = f"{user['uid'][:12]}..."
         else:
             self.user_label.text = "Авторизуйтесь"
 

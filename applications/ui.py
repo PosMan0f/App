@@ -108,12 +108,12 @@ class TaskCard(BoxLayout):
         info_row.add_widget(days_label)
 
         # Кнопки
-        buttons_layout = BoxLayout(size_hint_x=0.6, spacing=scale_dp(3))
+        buttons_layout = BoxLayout(size_hint_x=0.6, spacing=scale_dp(8))
 
         # Кнопка "Подробнее"
         view_btn = Button(
             text='Подробнее',
-            size_hint_x=0.3,
+            size_hint_x=0.45,
             background_color=palette['accent'],
             background_normal='',
             background_down='',
@@ -126,8 +126,8 @@ class TaskCard(BoxLayout):
         # Кнопка "Принять" или "Завершить"
         if show_accept:
             accept_btn = Button(
-                text='Принять задачу',
-                size_hint_x=0.3,
+                text='Принять',
+                size_hint_x=0.45,
                 background_color=palette['success'],
                 background_normal='',
                 background_down='',
@@ -150,7 +150,7 @@ class TaskCard(BoxLayout):
             buttons_layout.add_widget(complete_btn)
 
         # Заполнитель
-        buttons_layout.add_widget(Label())
+        buttons_layout.add_widget(Label(size_hint_x=0.1))
 
         info_row.add_widget(buttons_layout)
         self.add_widget(info_row)
