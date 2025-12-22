@@ -19,9 +19,9 @@ class TaskCard(BoxLayout):
 
         self.orientation = 'vertical'
         self.size_hint_y = None
-        self.height = scale_dp(170)
         self.padding = scale_dp(8)
         self.spacing = scale_dp(4)
+        self.bind(minimum_height=self.setter('height'))
 
         # Фон карточки
         with self.canvas.before:
@@ -42,44 +42,55 @@ class TaskCard(BoxLayout):
         self.bind(pos=self._update_bg, size=self._update_bg)
 
         # Заголовок
-        title_row = BoxLayout(size_hint_y=None, height=scale_dp(25))
+        title_row = BoxLayout(size_hint_y=None)
+        title_row.bind(minimum_height=title_row.setter('height'))
+
         title_label = Label(
-            text=task_data['title'][:30] + ('...' if len(task_data['title']) > 30 else ''),
+            text=task_data.get('title', ''),
             color=palette['text_primary'],
             font_size=scale_font(39),
             bold=True,
             halign='left',
-            size_hint_x=0.7
+            valign='top',
+            size_hint_x=0.7,
+            size_hint_y=None
         )
-        title_label.bind(size=title_label.setter('text_size'))
+        title_label.bind(
+            width=lambda instance, value: setattr(instance, 'text_size', (value, None)),
+            texture_size=lambda instance, value: setattr(instance, 'height', max(value[1], scale_dp(50)))
+        )
 
         dept_label = Label(
             text=task_data['department'][:15],
             color=palette['text_muted'],
             font_size=scale_font(26),
             size_hint_x=0.3,
-            halign='right'
+            halign='right',
+            valign='top',
+            size_hint_y=None
         )
-        dept_label.bind(size=dept_label.setter('text_size'))
+        dept_label.bind(
+            width=lambda instance, value: setattr(instance, 'text_size', (value, None)),
+            texture_size=lambda instance, value: setattr(instance, 'height', max(value[1], scale_dp(28)))
+        )
 
         title_row.add_widget(title_label)
         title_row.add_widget(dept_label)
         self.add_widget(title_row)
 
         # Описание
-        desc_text = task_data['description']
-        if len(desc_text) > 60:
-            desc_text = desc_text[:57] + '...'
-
         desc_label = Label(
-            text=desc_text,
+            text=task_data.get('description', ''),
             color=palette['text_muted'],
             font_size=scale_font(26),
             size_hint_y=None,
-            height=scale_dp(35),
-            halign='left'
+            halign='left',
+            valign='top'
         )
-        desc_label.bind(size=desc_label.setter('text_size'))
+        desc_label.bind(
+            width=lambda instance, value: setattr(instance, 'text_size', (value, None)),
+            texture_size=lambda instance, value: setattr(instance, 'height', max(value[1], scale_dp(40)))
+        )
         self.add_widget(desc_label)
 
         # Информация и кнопки
@@ -102,6 +113,8 @@ class TaskCard(BoxLayout):
             text='👁',
             size_hint_x=0.3,
             background_color=palette['accent'],
+            background_normal='',
+            background_down='',
             color=palette['text_primary'],
             font_size=scale_font(24)
         )
@@ -114,6 +127,8 @@ class TaskCard(BoxLayout):
                 text='✅',
                 size_hint_x=0.3,
                 background_color=palette['success'],
+                background_normal='',
+                background_down='',
                 color=palette['text_primary'],
                 font_size=scale_font(24)
             )
@@ -124,6 +139,8 @@ class TaskCard(BoxLayout):
                 text='🏁',
                 size_hint_x=0.3,
                 background_color=palette['danger'],
+                background_normal='',
+                background_down='',
                 color=palette['text_primary'],
                 font_size=scale_font(24)
             )

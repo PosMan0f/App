@@ -8,11 +8,24 @@ from kivy.uix.button import Button
 from kivy.uix.popup import Popup
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
-from kivy.uix.spinner import Spinner
+from kivy.uix.spinner import Spinner, SpinnerOption
 import threading
 
 from applications.ui import TaskCard
 from ui_style import palette, scale_dp, scale_font
+
+
+class ThemedSpinnerOption(SpinnerOption):
+    def __init__(self, **kwargs):
+        defaults = {
+            'background_normal': '',
+            'background_down': '',
+            'background_color': palette['surface_alt'],
+            'color': palette['text_primary'],
+            'font_size': scale_font(14)
+        }
+        defaults.update(kwargs)
+        super().__init__(**defaults)
 
 
 class BaseTasksTab(TabbedPanelItem):
@@ -126,8 +139,6 @@ class BaseTasksTab(TabbedPanelItem):
         for task in tasks:
             card = self.create_task_card(task)
             tasks_layout.add_widget(card)
-
-        tasks_layout.height = len(tasks) * scale_dp(110)
         scroll_view.add_widget(tasks_layout)
         self.content_container.add_widget(scroll_view)
 
@@ -155,6 +166,8 @@ class BaseTasksTab(TabbedPanelItem):
             size_hint_y=None,
             height=scale_dp(40),
             background_color=palette['accent'],
+            background_normal='',
+            background_down='',
             color=palette['text_primary'],
             font_size=scale_font(14),
             on_press=lambda x: self.safe_refresh()
@@ -220,8 +233,11 @@ class AllTasksTab(BaseTasksTab):
             size_hint_x=0.7,
             height=scale_dp(34),
             background_color=palette['surface_alt'],
+            background_normal='',
+            background_down='',
             color=palette['text_primary'],
-            font_size=scale_font(14)
+            font_size=scale_font(14),
+            option_cls=ThemedSpinnerOption
         )
         self.department_spinner.bind(text=self._on_department_changed)
 
@@ -229,6 +245,8 @@ class AllTasksTab(BaseTasksTab):
             text='🔄 Обновить',
             size_hint_x=0.3,
             background_color=palette['accent'],
+            background_normal='',
+            background_down='',
             color=palette['text_primary'],
             font_size=scale_font(14),
             on_press=lambda x: self.safe_refresh()
@@ -426,6 +444,8 @@ class AllTasksTab(BaseTasksTab):
             size_hint_y=None,
             height=scale_dp(50),
             background_color=palette['danger'],
+            background_normal='',
+            background_down='',
             color=palette['text_primary'],
             font_size=scale_font(30),
             on_press=modal.dismiss

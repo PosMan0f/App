@@ -50,7 +50,9 @@ class ApplicationsMainScreen(BoxLayout):
         self.tab_panel = TabbedPanel(
             do_default_tab=False,
             tab_width=scale_dp(120),
+            tab_height=scale_dp(42),
             background_color=palette['surface_alt'],
+            background_image='',
             size_hint=(1, 1)
         )
 
@@ -58,7 +60,10 @@ class ApplicationsMainScreen(BoxLayout):
         self.all_tasks_tab = AllTasksTab(
             text='Все задачи',
             task_manager=self.task_manager,
-            auto_refresher=self.auto_refresher
+            auto_refresher=self.auto_refresher,
+            background_normal='',
+            background_down='',
+            background_color=palette['surface']
         )
         self.tab_panel.add_widget(self.all_tasks_tab)
 
@@ -66,7 +71,10 @@ class ApplicationsMainScreen(BoxLayout):
         self.my_tasks_tab = MyTasksTab(
             text='Мои задачи',
             task_manager=self.task_manager,
-            auto_refresher=self.auto_refresher
+            auto_refresher=self.auto_refresher,
+            background_normal='',
+            background_down='',
+            background_color=palette['surface']
         )
         self.tab_panel.add_widget(self.my_tasks_tab)
 
@@ -85,6 +93,8 @@ class ApplicationsMainScreen(BoxLayout):
         refresh_all_btn = Button(
             text='🔄 Обновить все',
             background_color=palette['accent'],
+            background_normal='',
+            background_down='',
             color=palette['text_primary'],
             font_size=scale_font(14),
             on_press=lambda x: self.refresh_all_tabs()
@@ -94,6 +104,8 @@ class ApplicationsMainScreen(BoxLayout):
         self.auto_refresh_btn = Button(
             text='▶ Авто',
             background_color=palette['success'],
+            background_normal='',
+            background_down='',
             color=palette['text_primary'],
             font_size=scale_font(14),
             on_press=self.toggle_auto_refresh
