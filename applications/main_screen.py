@@ -143,7 +143,7 @@ class ApplicationsMainScreen(BoxLayout):
         """Проверка и отображение информации о пользователе"""
         if self.task_manager.current_user:
             user = self.task_manager.current_user
-            self.user_label.text = f"Пользователь: {user['uid'][:10]}..."
+            self.user_label.text = f"{user['uid'][:10]}..."
         else:
             self.user_label.text = "Авторизуйтесь"
 

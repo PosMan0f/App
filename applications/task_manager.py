@@ -58,7 +58,39 @@ class TaskManager:
 
     def _initialize_tables(self):
         """Инициализация таблиц"""
-        pass  # База уже инициализирована
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        # Создаём таблицу, если её ещё нет
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS applications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                department TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                days INTEGER NOT NULL,
+                created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status TEXT DEFAULT 'new'
+            )
+        ''')
+
+        # Гарантируем наличие служебных колонок для назначения и завершения задач
+        existing_columns = {
+            column[1] for column in cursor.execute('PRAGMA table_info(applications)').fetchall()
+        }
+
+        required_columns = {
+            'assigned_to': 'TEXT',
+            'assigned_date': 'TIMESTAMP',
+            'completed_date': 'TIMESTAMP'
+        }
+
+        for column_name, column_type in required_columns.items():
+            if column_name not in existing_columns:
+                cursor.execute(f'ALTER TABLE applications ADD COLUMN {column_name} {column_type}')
+
+        conn.commit()
+        conn.close()
 
     def _get_connection(self):
         """Получение соединения с БД"""
