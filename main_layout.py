@@ -81,7 +81,7 @@ class MainLayout(BoxLayout):
 
     def setup_ui(self):
         blocks = {
-            "top_panel": 0.07,
+            "top_panel": 0.1,
             "line1": 0.01,
             "main_area": 0.75,
             "line2": 0.01,

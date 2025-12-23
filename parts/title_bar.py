@@ -1,6 +1,7 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.button import Button
+from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
 from kivy.app import App
@@ -25,7 +26,7 @@ class TitleBar(BoxLayout):
         self.padding = [padding, 0, padding, 0]
 
         # Размер кнопок (можно настроить под ваш дизайн)
-        self.btn_size = scale_dp(32)
+        self.btn_size = scale_dp(64)
 
         with self.canvas.before:
             Color(*palette['surface'])
@@ -63,14 +64,7 @@ class TitleBar(BoxLayout):
             anchor_y='center'
         )
 
-        self.icon_btn = Button(
-            size_hint=(None, None),
-            width=self.btn_size,
-            height=self.btn_size,
-            background_normal="images/icon.png",
-            background_down="images/icon.png",
-            border=(0, 0, 0, 0)
-        )
+        self.icon_btn = self._create_icon_button("images/icon.png")
 
         self.icon_btn.bind(on_release=self.on_logo_click)
 
@@ -95,24 +89,12 @@ class TitleBar(BoxLayout):
         )
 
         # Кнопка "Свернуть"
-        self.min_btn = Button(
-            size_hint=(None, None),
-            width=self.btn_size,
-            height=self.btn_size,
-            background_normal="images/collapse.png",
-            background_down="images/collapse.png"
-        )
+        self.min_btn = self._create_icon_button("images/collapse.png")
         self.min_btn.bind(on_release=self.minimize_window)
         buttons_box.add_widget(self.min_btn)
 
         # Кнопка "Закрыть"
-        self.close_btn = Button(
-            size_hint=(None, None),
-            width=self.btn_size,
-            height=self.btn_size,
-            background_normal="images/close.png",
-            background_down="images/close.png"
-        )
+        self.close_btn = self._create_icon_button("images/close.png")
         self.close_btn.bind(on_release=self.close_app)
         buttons_box.add_widget(self.close_btn)
 
@@ -122,6 +104,36 @@ class TitleBar(BoxLayout):
     def setup_drag(self):
         """Настройка перетаскивания окна"""
         self._drag_pos = None
+
+    def _create_icon_button(self, source: str) -> Button:
+        """Создает прозрачную кнопку с иконкой поверх."""
+        button = Button(
+            size_hint=(None, None),
+            width=self.btn_size,
+            height=self.btn_size,
+            background_normal="",
+            background_down="",
+            background_color=(0, 0, 0, 0),
+            border=(0, 0, 0, 0)
+        )
+        icon_size = self.btn_size * 0.6
+        icon = Image(
+            source=source,
+            allow_stretch=True,
+            keep_ratio=True,
+            size_hint=(None, None),
+            size=(icon_size, icon_size)
+        )
+        button.add_widget(icon)
+        button.bind(
+            size=lambda instance, value: self._center_icon(icon, instance),
+            pos=lambda instance, value: self._center_icon(icon, instance)
+        )
+        self._center_icon(icon, button)
+        return button
+
+    def _center_icon(self, icon: Image, button: Button) -> None:
+        icon.center = button.center
 
     def start_move(self, instance, touch):
         # Игнорируем клик по кнопкам
