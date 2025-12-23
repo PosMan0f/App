@@ -2,7 +2,7 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.graphics import Color, RoundedRectangle
+from kivy.graphics import Color, Line, RoundedRectangle
 from ui_style import palette, scale_dp, scale_font
 from send.difficulty_predictor import format_difficulty
 
@@ -40,6 +40,19 @@ class TaskCard(BoxLayout):
                 radius=[scale_dp(8), ]
             )
 
+        with self.canvas.after:
+            Color(*palette['accent_muted'])
+            self.border_line = Line(
+                rounded_rectangle=[
+                    self.x,
+                    self.y,
+                    self.width,
+                    self.height,
+                    scale_dp(8),
+                ],
+                width=scale_dp(1)
+            )
+            
         self.bind(pos=self._update_bg, size=self._update_bg)
 
         # Заголовок
@@ -83,7 +96,7 @@ class TaskCard(BoxLayout):
         desc_label = Label(
             text=task_data.get('description', ''),
             color=palette['text_muted'],
-            font_size=scale_font(26),
+            font_size=scale_font(30),
             size_hint_y=None,
             halign='left',
             valign='top'
@@ -124,8 +137,13 @@ class TaskCard(BoxLayout):
         difficulty_label.bind(size=difficulty_label.setter('text_size'))
         info_row.add_widget(difficulty_label)
 
+        self.add_widget(info_row)
+
         # Кнопки
-        buttons_layout = BoxLayout(size_hint_x=0.4, spacing=scale_dp(8))
+        buttons_row = BoxLayout(size_hint_y=None, height=scale_dp(32))
+
+        # Кнопки
+        buttons_layout = BoxLayout(size_hint_x=1, spacing=scale_dp(8))
 
         # Кнопка "Подробнее"
         view_btn = Button(
@@ -169,12 +187,19 @@ class TaskCard(BoxLayout):
         # Заполнитель
         buttons_layout.add_widget(Label(size_hint_x=0.1))
 
-        info_row.add_widget(buttons_layout)
-        self.add_widget(info_row)
+        buttons_row.add_widget(buttons_layout)
+        self.add_widget(buttons_row)
 
     def _update_bg(self, *args):
         self.bg_rect.pos = self.pos
         self.bg_rect.size = self.size
+        self.border_line.rounded_rectangle = [
+            self.x,
+            self.y,
+            self.width,
+            self.height,
+            scale_dp(8),
+        ]
 
     def _on_view(self):
         if self.on_view:
