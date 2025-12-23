@@ -3,6 +3,7 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.spinner import Spinner, SpinnerOption
 from kivy.uix.button import Button
+from kivy.graphics import Color, RoundedRectangle
 from ui_style import palette, scale_dp, scale_font
 
 
@@ -121,7 +122,21 @@ class StatusLabel(BaseLabel):
         defaults = {
             'font_size': scale_font(14),
             'height': scale_dp(0),
-            'opacity': 0
+            'opacity': 0,
+            'halign': 'center',
+            'valign': 'middle',
+            'padding': (scale_dp(8), scale_dp(6))
         }
         defaults.update(kwargs)
         super().__init__(**defaults)
+        with self.canvas.before:
+            self._bg_color = Color(*palette['surface_alt'])
+            self._bg_rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[scale_dp(10)] * 4)
+        self.bind(
+            pos=lambda *args: setattr(self._bg_rect, 'pos', self.pos),
+            size=lambda *args: setattr(self._bg_rect, 'size', self.size)
+        )
+        self.bind(size=lambda *args: setattr(self, 'text_size', self.size))
+
+    def set_background(self, color):
+        self._bg_color.rgba = color

@@ -7,7 +7,7 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.popup import Popup
 from kivy.clock import Clock
-from kivy.graphics import Color, Rectangle
+from kivy.graphics import Color, Rectangle, RoundedRectangle
 import threading
 
 from applications.ui import TaskCard
@@ -23,6 +23,8 @@ class BaseTasksTab(TabbedPanelItem):
         self.auto_refresher = auto_refresher
         self.is_loading = False
         self.last_refresh_time = 0
+        self.notice_bar = None
+        self.notice_event = None
 
         # Основной контейнер
         self.content = BoxLayout(orientation='vertical')
@@ -177,10 +179,60 @@ class BaseTasksTab(TabbedPanelItem):
         popup.open()
         Clock.schedule_once(lambda dt: popup.dismiss(), duration)
 
+    def _clear_notice(self, *args):
+        if self.notice_event:
+            Clock.unschedule(self.notice_event)
+            self.notice_event = None
+        if self.notice_bar and self.notice_bar.parent:
+            self.content.remove_widget(self.notice_bar)
+        self.notice_bar = None
+
+    def show_notice(self, message: str, kind: str = 'success'):
+        """Показать уведомление снизу экрана."""
+        self._clear_notice()
+        base_color = palette['success'] if kind == 'success' else palette['danger']
+        self.notice_bar = BoxLayout(
+            size_hint_y=None,
+            height=scale_dp(48),
+            padding=[scale_dp(12), scale_dp(8)]
+        )
+        with self.notice_bar.canvas.before:
+            Color(*base_color)
+            bg = RoundedRectangle(pos=self.notice_bar.pos, size=self.notice_bar.size,
+                                  radius=[scale_dp(10)] * 4)
+        self.notice_bar.bind(
+            pos=lambda *args: setattr(bg, 'pos', self.notice_bar.pos),
+            size=lambda *args: setattr(bg, 'size', self.notice_bar.size)
+        )
+        notice_label = Label(
+            text=message,
+            color=palette['text_primary'],
+            font_size=scale_font(16),
+            halign='center',
+            valign='middle'
+        )
+        notice_label.bind(size=notice_label.setter('text_size'))
+        self.notice_bar.add_widget(notice_label)
+        self.content.add_widget(self.notice_bar)
+        self.notice_event = Clock.schedule_once(self._clear_notice, 2.5)
+
     def view_task(self, task_id):
         """Просмотр деталей задачи (базовая реализация)"""
-        print(f"👁 Просмотр задачи {task_id}")
-        self.show_message("Просмотр задачи", f"Детали задачи #{task_id}")
+        print(f"👁 Подробнее о задаче {task_id}")
+
+        if not self.task_manager:
+            self.show_message("Ошибка", "Нет подключения к менеджеру задач")
+            return
+
+        def load_task_details():
+            try:
+                task_details = self.task_manager.get_task_details(task_id)
+                Clock.schedule_once(lambda dt: self._show_task_details(task_details, task_id))
+            except Exception as e:
+                print(f"❌ Ошибка при загрузке деталей задачи: {e}")
+                Clock.schedule_once(lambda dt: self.show_message("Ошибка", f"Не удалось загрузить детали: {str(e)}"))
+
+        threading.Thread(target=load_task_details, daemon=True).start()
 
     def accept_task(self, task_id):
         """Принятие задачи (базовая реализация)"""
@@ -191,6 +243,90 @@ class BaseTasksTab(TabbedPanelItem):
         """Завершение задачи (базовая реализация)"""
         print(f"🏁 Завершение задачи {task_id}")
         self.show_message("Завершение", f"Задача #{task_id} завершена")
+
+    def _show_task_details(self, task_details, task_id):
+        """Показать детали задачи"""
+        if not task_details:
+            self.show_message("Ошибка", f"Задача #{task_id} не найдена")
+            return
+
+        from kivy.uix.modalview import ModalView
+
+        modal = ModalView(size_hint=(0.8, 0.8), background_color=palette['surface'], background='')
+        layout = BoxLayout(orientation='vertical', padding=scale_dp(20), spacing=scale_dp(12))
+        with layout.canvas.before:
+            Color(*palette['background'])
+            bg_rect = Rectangle(pos=layout.pos, size=layout.size)
+        layout.bind(pos=lambda *args: setattr(bg_rect, 'pos', layout.pos),
+                    size=lambda *args: setattr(bg_rect, 'size', layout.size))
+
+        # Заголовок
+        layout.add_widget(Label(
+            text=task_details.get('title', 'Без названия'),
+            font_size=scale_font(40),
+            bold=True,
+            color=palette['text_primary'],
+            size_hint_y=None,
+            height=scale_dp(44)
+        ))
+
+        # Отдел и статус
+        info_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=scale_dp(34))
+        info_layout.add_widget(Label(
+            text=f"Отдел: {task_details.get('department', 'Не указан')}",
+            color=palette['text_muted'],
+            font_size=scale_font(20)
+        ))
+        info_layout.add_widget(Label(
+            text=f"Статус: {task_details.get('status', 'new')}",
+            color=palette['text_muted'],
+            font_size=scale_font(20)
+        ))
+        layout.add_widget(info_layout)
+
+        # Срок
+        layout.add_widget(Label(
+            text=f"Дней на выполнение: {task_details.get('days', 0)}",
+            color=palette['text_muted'],
+            font_size=scale_font(20),
+            size_hint_y=None,
+            height=scale_dp(30)
+        ))
+
+        # Описание
+        from kivy.uix.scrollview import ScrollView as KivyScrollView
+        scroll = KivyScrollView()
+        desc_label = Label(
+            text=task_details.get('description', 'Нет описания'),
+            color=palette['text_primary'],
+            font_size=scale_font(20),
+            size_hint_y=None,
+            halign='left',
+            valign='top'
+        )
+        desc_label.bind(
+            width=lambda instance, value: setattr(desc_label, 'text_size', (value, None)),
+            texture_size=lambda instance, value: setattr(desc_label, 'height', desc_label.texture_size[1])
+        )
+        scroll.add_widget(desc_label)
+        layout.add_widget(scroll)
+
+        # Кнопка закрытия
+        close_btn = Button(
+            text='Закрыть',
+            size_hint_y=None,
+            height=scale_dp(62),
+            background_color=palette['danger'],
+            background_normal='',
+            background_down='',
+            color=palette['text_primary'],
+            font_size=scale_font(20),
+            on_press=modal.dismiss
+        )
+        layout.add_widget(close_btn)
+
+        modal.add_widget(layout)
+        modal.open()
 
 
 class AllTasksTab(BaseTasksTab):
@@ -330,113 +466,11 @@ class AllTasksTab(BaseTasksTab):
     def _on_task_assigned(self, success, task_id):
         """Обработка результата назначения задачи"""
         if success:
-            self.show_message("Успех", "Задача успешно принята!", 1.5)
+            self.show_notice("Задача успешно принята!", "success")
             # Автоматически обновляем через 0.5 секунды
             Clock.schedule_once(lambda dt: self.safe_refresh(), 0.5)
         else:
-            self.show_message("Ошибка", "Не удалось принять задачу", 2)
-
-    def view_task(self, task_id):
-        """Просмотр деталей задачи"""
-        print(f"👁 Подробнее о задаче {task_id}")
-
-        if not self.task_manager:
-            self.show_message("Ошибка", "Нет подключения к менеджеру задач")
-            return
-
-        def load_task_details():
-            try:
-                task_details = self.task_manager.get_task_details(task_id)
-                Clock.schedule_once(lambda dt: self._show_task_details(task_details, task_id))
-            except Exception as e:
-                print(f"❌ Ошибка при загрузке деталей задачи: {e}")
-                Clock.schedule_once(lambda dt: self.show_message("Ошибка", f"Не удалось загрузить детали: {str(e)}"))
-
-        threading.Thread(target=load_task_details, daemon=True).start()
-
-    def _show_task_details(self, task_details, task_id):
-        """Показать детали задачи"""
-        if not task_details:
-            self.show_message("Ошибка", f"Задача #{task_id} не найдена")
-            return
-
-        from kivy.uix.modalview import ModalView
-
-        modal = ModalView(size_hint=(0.8, 0.8), background_color=palette['surface'], background='')
-        layout = BoxLayout(orientation='vertical', padding=scale_dp(20), spacing=scale_dp(10))
-        with layout.canvas.before:
-            Color(*palette['background'])
-            bg_rect = Rectangle(pos=layout.pos, size=layout.size)
-        layout.bind(pos=lambda *args: setattr(bg_rect, 'pos', layout.pos),
-                    size=lambda *args: setattr(bg_rect, 'size', layout.size))
-
-        # Заголовок
-        layout.add_widget(Label(
-            text=task_details.get('title', 'Без названия'),
-            font_size=scale_font(40),
-            bold=True,
-            color=palette['text_primary'],
-            size_hint_y=None,
-            height=scale_dp(40)
-        ))
-
-        # Отдел и статус
-        info_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=scale_dp(30))
-        info_layout.add_widget(Label(
-            text=f"Отдел: {task_details.get('department', 'Не указан')}",
-            color=palette['text_muted'],
-            font_size=scale_font(16)
-        ))
-        info_layout.add_widget(Label(
-            text=f"Статус: {task_details.get('status', 'new')}",
-            color=palette['text_muted'],
-            font_size=scale_font(16)
-        ))
-        layout.add_widget(info_layout)
-
-        # Срок
-        layout.add_widget(Label(
-            text=f"Дней на выполнение: {task_details.get('days', 0)}",
-            color=palette['text_muted'],
-            font_size=scale_font(16),
-            size_hint_y=None,
-            height=scale_dp(25)
-        ))
-
-        # Описание
-        from kivy.uix.scrollview import ScrollView as KivyScrollView
-        scroll = KivyScrollView()
-        desc_label = Label(
-            text=task_details.get('description', 'Нет описания'),
-            color=palette['text_primary'],
-            font_size=scale_font(16),
-            size_hint_y=None,
-            halign='left',
-            valign='top'
-        )
-        desc_label.bind(
-            width=lambda instance, value: setattr(desc_label, 'text_size', (value, None)),
-            texture_size=lambda instance, value: setattr(desc_label, 'height', desc_label.texture_size[1])
-        )
-        scroll.add_widget(desc_label)
-        layout.add_widget(scroll)
-
-        # Кнопка закрытия
-        close_btn = Button(
-            text='Закрыть',
-            size_hint_y=None,
-            height=scale_dp(50),
-            background_color=palette['danger'],
-            background_normal='',
-            background_down='',
-            color=palette['text_primary'],
-            font_size=scale_font(18),
-            on_press=modal.dismiss
-        )
-        layout.add_widget(close_btn)
-
-        modal.add_widget(layout)
-        modal.open()
+            self.show_notice("Не удалось принять задачу", "error")
 
 
 class MyTasksTab(BaseTasksTab):
@@ -531,8 +565,8 @@ class MyTasksTab(BaseTasksTab):
     def _on_task_completed(self, success, task_id):
         """Обработка результата завершения задачи"""
         if success:
-            self.show_message("Успех", "Задача завершена!", 1.5)
+            self.show_notice("Задача завершена!", "success")
             # Автоматически обновляем через 0.5 секунды
             Clock.schedule_once(lambda dt: self.safe_refresh(), 0.5)
         else:
-            self.show_message("Ошибка", "Не удалось завершить задачу", 2)
+            self.show_notice("Не удалось завершить задачу", "error")

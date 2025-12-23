@@ -2,6 +2,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
+from kivy.uix.spinner import Spinner, SpinnerOption
 from kivy.uix.popup import Popup
 from kivy.core.text import LabelBase
 from kivy.metrics import sp
@@ -30,6 +31,42 @@ except:
 
 # Файл для хранения токена
 TOKEN_FILE = 'auth_token.json'
+
+class ProfileSpinnerOption(SpinnerOption):
+    """Стилизация пунктов выпадающего списка."""
+    def __init__(self, **kwargs):
+        defaults = {
+            'background_normal': '',
+            'background_down': '',
+            'background_color': palette['surface_alt'],
+            'color': palette['text_primary'],
+            'font_size': scale_font(15)
+        }
+        defaults.update(kwargs)
+        super().__init__(**defaults)
+
+
+class StyledSpinner(Spinner):
+    """Стилизованный спиннер для профиля."""
+    def __init__(self, **kwargs):
+        defaults = {
+            'background_normal': '',
+            'background_down': '',
+            'background_color': palette['surface_alt'],
+            'color': palette['text_primary'],
+            'font_size': scale_font(15),
+            'option_cls': ProfileSpinnerOption
+        }
+        defaults.update(kwargs)
+        super().__init__(**defaults)
+        with self.canvas.before:
+            self._bg_color = Color(*palette['surface_alt'])
+            self._bg_rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[scale_dp(10)] * 4)
+        self.bind(
+            pos=lambda *args: setattr(self._bg_rect, 'pos', self.pos),
+            size=lambda *args: setattr(self._bg_rect, 'size', self.size)
+        )
+
 
 
 class ProfileLogic:
@@ -82,17 +119,17 @@ class ProfileLogic:
         if self.current_user:
             self.load_profile_form()
         else:
-            self.load_login_register_form()
+            self.load_login_form()
 
-    def load_login_register_form(self):
-        """Загружает форму входа/регистрации"""
+    def load_login_form(self):
+        """Загружает форму входа"""
         scroll = ScrollView()
         main_layout = BoxLayout(orientation='vertical', spacing=15, padding=20, size_hint_y=None)
         main_layout.bind(minimum_height=main_layout.setter('height'))
 
         # Заголовок
         title = Label(
-            text='Авторизация / Регистрация',
+            text='Авторизация',
             size_hint_y=None,
             height=80,
             halign='center',
@@ -109,21 +146,57 @@ class ProfileLogic:
         main_layout.add_widget(login_form)
 
         # Разделитель
-        separator = Label(
-            text='──────── ИЛИ ────────',
+        register_btn = Button(
+            text='Регистрация',
             size_hint_y=None,
-            height=40,
-            halign='center',
-            font_size=sp(14),
-            font_name='TimesNewRoman',
-            color=(0.6, 0.6, 0.6, 1)
+            height=50,
+            background_color=palette['accent_muted'],
+            background_normal='',
+            background_down='',
+            color=palette['text_primary'],
+            font_name='TimesNewRoman'
         )
-        separator.bind(size=separator.setter('text_size'))
-        main_layout.add_widget(separator)
+        register_btn.bind(on_press=lambda x: self.load_register_form())
+        main_layout.add_widget(register_btn)
 
-        # Форма регистрации
+        scroll.add_widget(main_layout)
+        self.content_container.add_widget(scroll)
+
+    def load_register_form(self):
+        """Загружает форму регистрации"""
+        self.content_container.clear_widgets()
+        scroll = ScrollView()
+        main_layout = BoxLayout(orientation='vertical', spacing=15, padding=20, size_hint_y=None)
+        main_layout.bind(minimum_height=main_layout.setter('height'))
+
+        title = Label(
+            text='Регистрация',
+            size_hint_y=None,
+            height=80,
+            halign='center',
+            font_size=sp(24),
+            font_name='TimesNewRoman',
+            color=(0.8, 0.8, 0.8, 1)
+        )
+        title.bind(size=title.setter('text_size'))
+        main_layout.add_widget(title)
+
+
         register_form, self.register_fields = self.create_register_form()
         main_layout.add_widget(register_form)
+
+        back_btn = Button(
+            text='Назад к входу',
+            size_hint_y=None,
+            height=50,
+            background_color=palette['surface_alt'],
+            background_normal='',
+            background_down='',
+            color=palette['text_primary'],
+            font_name='TimesNewRoman'
+        )
+        back_btn.bind(on_press=lambda x: self.load_login_form())
+        main_layout.add_widget(back_btn)
 
         scroll.add_widget(main_layout)
         self.content_container.add_widget(scroll)
@@ -439,7 +512,7 @@ class ProfileLogic:
                 text='Сменить пароль',
                 size_hint_y=None,
                 height=50,
-                background_color=palette['success'],
+                background_color=palette['accent_muted'],
                 background_normal='',
                 background_down='',
                 color=palette['text_primary'],
@@ -456,7 +529,7 @@ class ProfileLogic:
             background_color=palette['danger'],
             background_normal='',
             background_down='',
-            color=palette['text_primary'],
+            color=palette['danger'],
             font_name='TimesNewRoman'
         )
         logout_btn.bind(on_press=self.logout)
@@ -468,7 +541,6 @@ class ProfileLogic:
     def create_profile_form(self):
         """Создает форму профиля"""
         from kivy.uix.textinput import TextInput
-        from kivy.uix.spinner import Spinner
 
         form = BoxLayout(orientation='vertical', spacing=15, size_hint_y=None)
         form.bind(minimum_height=form.setter('height'))
@@ -549,15 +621,11 @@ class ProfileLogic:
         # Отдел
         form.add_widget(Label(text='Отдел:', size_hint_y=None, height=30,
                               font_name='TimesNewRoman', color=(0.8, 0.8, 0.8, 1)))
-        fields['department'] = Spinner(
+        fields['department'] = StyledSpinner(
             text=self.current_user.get('department', 'Не выбран') or 'Не выбран',
             values=('Не выбран', 'IT-отдел', 'Юридический отдел', 'HR-отдел'),
             size_hint_y=None,
             height=40,
-            background_color=palette['surface'],
-            background_normal='',
-            background_down='',
-            color=palette['text_primary'],
             font_name='TimesNewRoman'
         )
         fields['department'].disabled = self.is_locked
@@ -570,39 +638,59 @@ class ProfileLogic:
         from kivy.uix.textinput import TextInput
 
         popup_layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
-
+        with popup_layout.canvas.before:
+            Color(*palette['surface'])
+            popup_bg = RoundedRectangle(pos=popup_layout.pos, size=popup_layout.size,
+                                         radius=[scale_dp(12)] * 4)
+        popup_layout.bind(
+            pos=lambda *args: setattr(popup_bg, 'pos', popup_layout.pos),
+            size=lambda *args: setattr(popup_bg, 'size', popup_layout.size)
+        )
+        
         # Старый пароль
-        popup_layout.add_widget(Label(text='Старый пароль:', font_name='TimesNewRoman'))
+        popup_layout.add_widget(Label(text='Старый пароль:', font_name='TimesNewRoman',
+                                      color=palette['text_primary']))
         old_password = TextInput(
             multiline=False,
             password=True,
             hint_text='Введите старый пароль',
-            background_color=(1, 1, 1, 0.1),
-            foreground_color=(1, 1, 1, 1),
+            background_color=palette['surface_alt'],
+            foreground_color=palette['text_primary'],
+            hint_text_color=palette['text_muted'],
+            background_normal='',
+            background_active='',
             font_name='TimesNewRoman'
         )
         popup_layout.add_widget(old_password)
 
         # Новый пароль
-        popup_layout.add_widget(Label(text='Новый пароль:', font_name='TimesNewRoman'))
+        popup_layout.add_widget(Label(text='Новый пароль:', font_name='TimesNewRoman',
+                                      color=palette['text_primary']))
         new_password = TextInput(
             multiline=False,
             password=True,
             hint_text='Введите новый пароль',
-            background_color=(1, 1, 1, 0.1),
-            foreground_color=(1, 1, 1, 1),
+            background_color=palette['surface_alt'],
+            foreground_color=palette['text_primary'],
+            hint_text_color=palette['text_muted'],
+            background_normal='',
+            background_active='',
             font_name='TimesNewRoman'
         )
         popup_layout.add_widget(new_password)
 
         # Подтверждение пароля
-        popup_layout.add_widget(Label(text='Подтвердите пароль:', font_name='TimesNewRoman'))
+        popup_layout.add_widget(Label(text='Подтвердите пароль:', font_name='TimesNewRoman',
+                                      color=palette['text_primary']))
         confirm_password = TextInput(
             multiline=False,
             password=True,
             hint_text='Повторите новый пароль',
-            background_color=(1, 1, 1, 0.1),
-            foreground_color=(1, 1, 1, 1),
+            background_color=palette['surface_alt'],
+            foreground_color=palette['text_primary'],
+            hint_text_color=palette['text_muted'],
+            background_normal='',
+            background_active='',
             font_name='TimesNewRoman'
         )
         popup_layout.add_widget(confirm_password)
@@ -663,7 +751,9 @@ class ProfileLogic:
             title='Смена пароля',
             content=popup_layout,
             size_hint=(0.7, 0.5),
-            title_font='TimesNewRoman'
+            title_font='TimesNewRoman',
+            background='',
+            background_color=(0, 0, 0, 0)
         )
         popup.open()
 

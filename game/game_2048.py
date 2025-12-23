@@ -4,6 +4,8 @@ from kivy.uix.label import Label
 from kivy.core.window import Window
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.button import Button
+from kivy.animation import Animation
+from kivy.graphics import Color, RoundedRectangle
 
 from random import choice, random
 import numpy as np
@@ -12,10 +14,9 @@ import numpy as np
 #import sys
 #sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from config import  *
-from .bordered_button import BorderedButton
 from .game_button import GameButton
 from kivy.clock import Clock
+from ui_style import palette, scale_dp, scale_font
 
 class Game2048(BoxLayout):
     def __init__(self, **kwargs):
@@ -26,20 +27,64 @@ class Game2048(BoxLayout):
         self.padding = 10
         self.spacing = 10
 
-        # Заголовок
-        self.title_label = Label(
-            text="2048",
-            size_hint=(1, 0.1),
-            font_size=f'{int(win_width/16)}sp',
-            color=(0,0,0,1),
-            bold=True,
-            halign='center',  # Центрирование по горизонтали
-            valign='middle',  # Центрирование по вертикали
-            text_size=(None, None),
-            outline_width=2,  # Толщина обводки/тени
-            outline_color=(1, 1, 1, 1)  # Займет всю доступную область
+        self.last_board = None
+        self.last_score = 0
+        self.display_board = None
+
+        # Верхняя панель: вернуть ход и счет
+        header = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=scale_dp(56),
+            spacing=scale_dp(10),
+            padding=[scale_dp(8), scale_dp(6)]
         )
-        self.add_widget(self.title_label)
+
+        self.undo_container = BoxLayout(padding=[scale_dp(8), scale_dp(6)])
+        with self.undo_container.canvas.before:
+            Color(*palette['surface_alt'])
+            self._undo_bg = RoundedRectangle(pos=self.undo_container.pos, size=self.undo_container.size,
+                                             radius=[scale_dp(12)] * 4)
+        self.undo_container.bind(
+            pos=lambda *args: setattr(self._undo_bg, 'pos', self.undo_container.pos),
+            size=lambda *args: setattr(self._undo_bg, 'size', self.undo_container.size)
+        )
+
+        self.undo_btn = Button(
+            text='↶ Вернуть ход',
+            background_normal='',
+            background_down='',
+            background_color=(0, 0, 0, 0),
+            color=palette['text_primary'],
+            font_size=scale_font(14)
+        )
+        self.undo_btn.bind(on_press=self.undo_move)
+        self.undo_container.add_widget(self.undo_btn)
+
+        self.score_container = BoxLayout(padding=[scale_dp(8), scale_dp(6)])
+        with self.score_container.canvas.before:
+            Color(*palette['accent'])
+            self._score_bg = RoundedRectangle(pos=self.score_container.pos, size=self.score_container.size,
+                                              radius=[scale_dp(12)] * 4)
+        self.score_container.bind(
+            pos=lambda *args: setattr(self._score_bg, 'pos', self.score_container.pos),
+            size=lambda *args: setattr(self._score_bg, 'size', self.score_container.size)
+        )
+
+        self.score_label = Label(
+            text='Счет: 0',
+            color=palette['text_primary'],
+            font_size=scale_font(16),
+            bold=True,
+            halign='center',
+            valign='middle'
+        )
+        self.score_label.bind(size=self.score_label.setter('text_size'))
+        self.score_container.add_widget(self.score_label)
+
+        header.add_widget(self.undo_container)
+        header.add_widget(self.score_container)
+        self.add_widget(header)
 
         # Игровое поле
         self.game_layout = BoxLayout(orientation='vertical', size_hint=(1,1))
@@ -48,19 +93,39 @@ class Game2048(BoxLayout):
 
         # Контейнер для центрирования кнопки
         button_container = AnchorLayout(
-            size_hint=(1, 0.1),
+            size_hint=(1, None),
+            height=scale_dp(56),
             anchor_x='center',
             anchor_y='center'
         )
 
-        # Кнопка с фиксированной шириной
-        self.restart_btn = BorderedButton(
+        self.restart_container = BoxLayout(
+            size_hint=(0.8, 1),
+            padding=[scale_dp(8), scale_dp(6)]
+        )
+        with self.restart_container.canvas.before:
+            Color(*palette['surface_alt'])
+            self._restart_bg = RoundedRectangle(pos=self.restart_container.pos, size=self.restart_container.size,
+                                                radius=[scale_dp(12)] * 4)
+        self.restart_container.bind(
+            pos=lambda *args: setattr(self._restart_bg, 'pos', self.restart_container.pos),
+            size=lambda *args: setattr(self._restart_bg, 'size', self.restart_container.size)
+        )
+
+        self.restart_btn = Button(
             text="Новая игра",
-            size_hint=(0.6, 1)
+            size_hint=(1, 1),
+            background_normal='',
+            background_down='',
+            background_color=(0, 0, 0, 0),
+            color=palette['text_primary'],
+            font_size=scale_font(16),
+            bold=True
         )
         self.restart_btn.bind(on_press=self.restart_game)
 
-        button_container.add_widget(self.restart_btn)
+        self.restart_container.add_widget(self.restart_btn)
+        button_container.add_widget(self.restart_container)
         self.game_layout.add_widget(button_container)
 
         self.add_widget(self.game_layout)
@@ -133,10 +198,13 @@ class Game2048(BoxLayout):
         """Начать новую игру"""
         self.board = np.zeros((4, 4), dtype=int)
         self.score = 0
+        self.last_board = None
+        self.last_score = 0
+        self.undo_btn.disabled = True
         self.add_random_tile()
         self.add_random_tile()
         self.update_display()
-        self.title_label.text = "2048\nСчет: 0"  # Убедись что это есть
+        self.update_score_label()
 
     def add_random_tile(self):
         """Добавить случайную плитку (2 или 4) в случайную пустую ячейку"""
@@ -151,11 +219,21 @@ class Game2048(BoxLayout):
             for j in range(4):
                 index = i * 4 + j
                 self.update_cell_appearance(self.cells[index], self.board[i][j])
+                if self.display_board is None or self.display_board[i][j] != self.board[i][j]:
+                    self.cells[index].animate_value_change()
+        self.display_board = self.board.copy()
 
+    def update_score_label(self):
+        self.score_label.text = f'Счет: {self.score}'
+        Animation.cancel_all(self.score_label)
+        self.score_label.opacity = 0.6
+        Animation(opacity=1, duration=0.2).start(self.score_label)
+        
     def move(self, direction):
         """Выполнить ход в указанном направлении"""
         # Создаем копию доски для проверки изменений
         old_board = self.board.copy()
+        old_score = self.score
 
         if direction == 'up':
             self.move_up()
@@ -168,8 +246,12 @@ class Game2048(BoxLayout):
 
         # Если доска изменилась
         if not np.array_equal(old_board, self.board):
+            self.last_board = old_board
+            self.last_score = old_score
+            self.undo_btn.disabled = False
             self.add_random_tile()
             self.update_display()
+            self.update_score_label()
             # Проверяем окончание игры
             self.check_game_over()
         else:
@@ -239,8 +321,6 @@ class Game2048(BoxLayout):
         """Проверить условие окончания игры и обновить заголовок если игра окончена"""
         # Проверяем есть ли пустые клетки
         if 0 in self.board:
-            # Есть пустые клетки - игра точно не окончена
-            self.title_label.text = f"2048\nСчет: {self.score}"
             return False
 
         # Проверяем возможны ли объединения по горизонтали и вертикали
@@ -249,16 +329,25 @@ class Game2048(BoxLayout):
                 current = self.board[i][j]
                 # Проверка соседа справа
                 if j < 3 and current == self.board[i][j + 1]:
-                    self.title_label.text = f"2048\nСчет: {self.score}"
                     return False
                 # Проверка соседа снизу
                 if i < 3 and current == self.board[i + 1][j]:
-                    self.title_label.text = f"2048\nСчет: {self.score}"
                     return False
 
         # Если дошли сюда - игра действительно окончена
-        self.title_label.text = f"ИГРА ОКОНЧЕНА!\nСчет: {self.score}"
         return True
+    
+    def undo_move(self, instance=None):
+        """Откатить один ход"""
+        if self.last_board is None:
+            return
+        self.board = self.last_board.copy()
+        self.score = self.last_score
+        self.last_board = None
+        self.last_score = 0
+        self.undo_btn.disabled = True
+        self.update_display()
+        self.update_score_label()
 
     def bind_keyboard(self, dt=None):
         """Привязать клавиатуру к виджету"""

@@ -10,6 +10,7 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.metrics import dp
 from datetime import datetime
+from ui_style import palette, scale_dp, scale_font
 
 
 class ChatBubble(BoxLayout):
@@ -186,22 +187,43 @@ class NewChatPopup(Popup):
         super().__init__(**kwargs)
         self.title = 'Новый чат'
         self.size_hint = (0.9, 0.8)
+        self.background = ''
+        self.background_color = (0, 0, 0, 0)
         self.on_user_selected = on_user_selected
         self.current_uid = current_uid
         self.db_manager = db_manager  # Сохраняем db_manager
         self.chats_db = chats_db
 
-        layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(10))
+        layout = BoxLayout(orientation='vertical', padding=scale_dp(12), spacing=scale_dp(10))
+        with layout.canvas.before:
+            Color(*palette['surface'])
+            self._popup_bg = RoundedRectangle(pos=layout.pos, size=layout.size,
+                                              radius=[scale_dp(16)] * 4)
+        layout.bind(
+            pos=lambda *args: setattr(self._popup_bg, 'pos', layout.pos),
+            size=lambda *args: setattr(self._popup_bg, 'size', layout.size)
+        )
 
-        search_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(50))
+        search_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=scale_dp(48),
+                                  spacing=scale_dp(8))
         self.search_input = TextInput(
             hint_text='Поиск по UID или email...',
             multiline=False,
-            size_hint_x=0.8
+            size_hint_x=0.8,
+            background_color=palette['surface_alt'],
+            foreground_color=palette['text_primary'],
+            hint_text_color=palette['text_muted'],
+            background_normal='',
+            background_active='',
+            font_size=scale_font(15)
         )
         search_btn = Button(
             text='Найти',
-            size_hint_x=0.2,
+            background_color=palette['accent'],
+            background_normal='',
+            background_down='',
+            color=palette['text_primary'],
+            font_size=scale_font(14),
             on_press=self.search_users
         )
         search_layout.add_widget(self.search_input)
@@ -240,23 +262,33 @@ class NewChatPopup(Popup):
                 user_item = BoxLayout(
                     orientation='horizontal',
                     size_hint_y=None,
-                    height=dp(60),
-                    padding=dp(10)
+                    height=scale_dp(64),
+                    padding=scale_dp(10),
+                    spacing=scale_dp(8)
+                )
+                with user_item.canvas.before:
+                    Color(*palette['surface_alt'])
+                    item_bg = RoundedRectangle(pos=user_item.pos, size=user_item.size,
+                                               radius=[scale_dp(10)] * 4)
+                user_item.bind(
+                    pos=lambda *args: setattr(item_bg, 'pos', user_item.pos),
+                    size=lambda *args: setattr(item_bg, 'size', user_item.size)
                 )
 
                 info_layout = BoxLayout(orientation='vertical')
                 name_label = Label(
                     text=user['name'],
                     halign='left',
-                    color=(1, 1, 1, 1)
+                    color=palette['text_primary'],
+                    font_size=scale_font(15)
                 )
                 name_label.bind(size=name_label.setter('text_size'))
 
                 uid_label = Label(
                     text=f"UID: {user['uid']}",
                     halign='left',
-                    color=(0.8, 0.8, 0.8, 1),
-                    font_size=dp(12)
+                    color=palette['text_muted'],
+                    font_size=scale_font(12)
                 )
                 uid_label.bind(size=uid_label.setter('text_size'))
 
@@ -266,6 +298,11 @@ class NewChatPopup(Popup):
                 select_btn = Button(
                     text='Написать',
                     size_hint_x=0.3,
+                    background_color=palette['accent_muted'],
+                    background_normal='',
+                    background_down='',
+                    color=palette['text_primary'],
+                    font_size=scale_font(13),
                     on_press=lambda x, u=user: self.select_user(u)
                 )
 

@@ -96,9 +96,11 @@ class RequestForm(BoxLayout):
         self.status_label.opacity = 1
 
         if is_error:
-            self.status_label.color = palette['danger']  # Красный
+            self.status_label.color = palette['text_primary']
+            self.status_label.set_background(palette['danger'])  # Красный
         else:
-            self.status_label.color = palette['success']  # Зеленый
+            self.status_label.color = palette['text_primary']
+            self.status_label.set_background(palette['success'])  # Зеленый
 
         # Автоматическое скрытие
         from kivy.clock import Clock

@@ -1,6 +1,7 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.graphics import Color, Line, Rectangle
 from kivy.uix.label import Label
+from kivy.animation import Animation
 
 
 class GameButton(BoxLayout):
@@ -54,7 +55,13 @@ class GameButton(BoxLayout):
         # Убедимся, что текст видимый
         self.label.color = (0, 0, 0, 1)
         self.label.disabled_color = (0, 0, 0, 1)
-
+        
+    def animate_value_change(self):
+        """Простая анимация появления/обновления плитки."""
+        Animation.cancel_all(self)
+        self.opacity = 0.4
+        Animation(opacity=1, duration=0.15).start(self)
+        
     def _update_text_size(self, instance, size):
         """Центрирование текста"""
         instance.text_size = size
