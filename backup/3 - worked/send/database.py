@@ -22,23 +22,15 @@ class RequestDatabase:
                 title TEXT NOT NULL,
                 description TEXT NOT NULL,
                 days INTEGER NOT NULL,
-                difficulty INTEGER DEFAULT 1,
                 created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 status TEXT DEFAULT 'new'
             )
         ''')
 
-        existing_columns = {
-            column[1] for column in cursor.execute('PRAGMA table_info(applications)').fetchall()
-        }
-
-        if 'difficulty' not in existing_columns:
-            cursor.execute('ALTER TABLE applications ADD COLUMN difficulty INTEGER DEFAULT 1')
-
         conn.commit()
         conn.close()
 
-    def save_request(self, department, title, description, days, difficulty):
+    def save_request(self, department, title, description, days):
         """Сохранение заявки в базу данных"""
         try:
             conn = sqlite3.connect(self.db_path)
@@ -46,9 +38,9 @@ class RequestDatabase:
 
             cursor.execute('''
                 INSERT INTO applications 
-                (department, title, description, days, difficulty)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (department, title, description, days, difficulty))
+                (department, title, description, days)
+                VALUES (?, ?, ?, ?)
+            ''', (department, title, description, days))
 
             conn.commit()
             conn.close()

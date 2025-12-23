@@ -4,7 +4,6 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.graphics import Color, RoundedRectangle
 from ui_style import palette, scale_dp, scale_font
-from send.difficulty_predictor import format_difficulty
 
 
 class TaskCard(BoxLayout):
@@ -20,9 +19,9 @@ class TaskCard(BoxLayout):
 
         self.orientation = 'vertical'
         self.size_hint_y = None
+        self.height = scale_dp(170)
         self.padding = scale_dp(8)
         self.spacing = scale_dp(4)
-        self.bind(minimum_height=self.setter('height'))
 
         # Фон карточки
         with self.canvas.before:
@@ -43,55 +42,44 @@ class TaskCard(BoxLayout):
         self.bind(pos=self._update_bg, size=self._update_bg)
 
         # Заголовок
-        title_row = BoxLayout(size_hint_y=None)
-        title_row.bind(minimum_height=title_row.setter('height'))
-
+        title_row = BoxLayout(size_hint_y=None, height=scale_dp(25))
         title_label = Label(
-            text=task_data.get('title', ''),
+            text=task_data['title'][:30] + ('...' if len(task_data['title']) > 30 else ''),
             color=palette['text_primary'],
             font_size=scale_font(39),
             bold=True,
             halign='left',
-            valign='top',
-            size_hint_x=0.7,
-            size_hint_y=None
+            size_hint_x=0.7
         )
-        title_label.bind(
-            width=lambda instance, value: setattr(instance, 'text_size', (value, None)),
-            texture_size=lambda instance, value: setattr(instance, 'height', max(value[1], scale_dp(50)))
-        )
+        title_label.bind(size=title_label.setter('text_size'))
 
         dept_label = Label(
             text=task_data['department'][:15],
             color=palette['text_muted'],
             font_size=scale_font(26),
             size_hint_x=0.3,
-            halign='right',
-            valign='top',
-            size_hint_y=None
+            halign='right'
         )
-        dept_label.bind(
-            width=lambda instance, value: setattr(instance, 'text_size', (value, None)),
-            texture_size=lambda instance, value: setattr(instance, 'height', max(value[1], scale_dp(28)))
-        )
+        dept_label.bind(size=dept_label.setter('text_size'))
 
         title_row.add_widget(title_label)
         title_row.add_widget(dept_label)
         self.add_widget(title_row)
 
         # Описание
+        desc_text = task_data['description']
+        if len(desc_text) > 60:
+            desc_text = desc_text[:57] + '...'
+
         desc_label = Label(
-            text=task_data.get('description', ''),
+            text=desc_text,
             color=palette['text_muted'],
             font_size=scale_font(26),
             size_hint_y=None,
-            halign='left',
-            valign='top'
+            height=scale_dp(35),
+            halign='left'
         )
-        desc_label.bind(
-            width=lambda instance, value: setattr(instance, 'text_size', (value, None)),
-            texture_size=lambda instance, value: setattr(instance, 'height', max(value[1], scale_dp(40)))
-        )
+        desc_label.bind(size=desc_label.setter('text_size'))
         self.add_widget(desc_label)
 
         # Информация и кнопки
@@ -99,41 +87,21 @@ class TaskCard(BoxLayout):
 
         # Дни
         days_label = Label(
-            text=f"Дней на выполнение: {task_data['days']}",
+            text=f"📅 {task_data['days']} дн.",
             color=palette['text_primary'],
             font_size=scale_font(24),
-            size_hint_x=0.32,
-            halign='left'
+            size_hint_x=0.4
         )
-        days_label.bind(size=days_label.setter('text_size'))
         info_row.add_widget(days_label)
 
-        # Сложность
-        raw_difficulty = task_data.get('difficulty', 1)
-        try:
-            difficulty_value = int(raw_difficulty)
-        except (TypeError, ValueError):
-            difficulty_value = 1
-        difficulty_label = Label(
-            text=f"Сложность: {format_difficulty(difficulty_value)}",
-            color=palette['text_primary'],
-            font_size=scale_font(24),
-            size_hint_x=0.28,
-            halign='left'
-        )
-        difficulty_label.bind(size=difficulty_label.setter('text_size'))
-        info_row.add_widget(difficulty_label)
-
         # Кнопки
-        buttons_layout = BoxLayout(size_hint_x=0.4, spacing=scale_dp(8))
+        buttons_layout = BoxLayout(size_hint_x=0.6, spacing=scale_dp(3))
 
         # Кнопка "Подробнее"
         view_btn = Button(
-            text='Подробнее',
+            text='👁',
             size_hint_x=0.3,
             background_color=palette['accent'],
-            background_normal='',
-            background_down='',
             color=palette['text_primary'],
             font_size=scale_font(24)
         )
@@ -143,11 +111,9 @@ class TaskCard(BoxLayout):
         # Кнопка "Принять" или "Завершить"
         if show_accept:
             accept_btn = Button(
-                text='Принять задачу',
+                text='✅',
                 size_hint_x=0.3,
                 background_color=palette['success'],
-                background_normal='',
-                background_down='',
                 color=palette['text_primary'],
                 font_size=scale_font(24)
             )
@@ -155,11 +121,9 @@ class TaskCard(BoxLayout):
             buttons_layout.add_widget(accept_btn)
         elif show_complete:
             complete_btn = Button(
-                text='Завершить',
+                text='🏁',
                 size_hint_x=0.3,
                 background_color=palette['danger'],
-                background_normal='',
-                background_down='',
                 color=palette['text_primary'],
                 font_size=scale_font(24)
             )
@@ -167,7 +131,7 @@ class TaskCard(BoxLayout):
             buttons_layout.add_widget(complete_btn)
 
         # Заполнитель
-        buttons_layout.add_widget(Label(size_hint_x=0.1))
+        buttons_layout.add_widget(Label())
 
         info_row.add_widget(buttons_layout)
         self.add_widget(info_row)

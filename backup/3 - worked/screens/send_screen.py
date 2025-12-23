@@ -4,7 +4,6 @@ from kivy.graphics import Color, Rectangle
 from send.request_form import RequestForm
 from send.database import RequestDatabase
 from send.validator import RequestValidator
-from send.difficulty_predictor import predict_difficulty
 from kivy.clock import Clock
 from ui_style import palette
 
@@ -44,15 +43,12 @@ class SendScreen(Screen):
             self.form.show_status('Ошибка: ' + ', '.join(errors), is_error=True)
             return
 
-        difficulty = predict_difficulty(f"{data['title']}\n{data['description']}")
-
         # Сохранение в БД
         success = self.database.save_request(
             data['department'],
             data['title'],
             data['description'],
-            int(data['days']),
-            difficulty
+            int(data['days'])
         )
 
         if success:
