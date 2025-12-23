@@ -87,7 +87,11 @@ class Game2048(BoxLayout):
         self.add_widget(header)
 
         # Игровое поле
-        self.game_layout = BoxLayout(orientation='vertical', size_hint=(1,1))
+        self.game_layout = BoxLayout(
+            orientation='vertical',
+            size_hint=(1, 1),
+            spacing=scale_dp(12)
+        )
         self.grid = GridLayout(cols=4, spacing=5, size_hint=(1, 1))
         self.game_layout.add_widget(self.grid)
 

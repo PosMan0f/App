@@ -215,7 +215,7 @@ class NewChatPopup(Popup):
             hint_text_color=palette['text_muted'],
             background_normal='',
             background_active='',
-            font_size=scale_font(15)
+            font_size=scale_font(25)
         )
         search_btn = Button(
             text='Найти',
@@ -223,7 +223,7 @@ class NewChatPopup(Popup):
             background_normal='',
             background_down='',
             color=palette['text_primary'],
-            font_size=scale_font(14),
+            font_size=scale_font(25),
             on_press=self.search_users
         )
         search_layout.add_widget(self.search_input)

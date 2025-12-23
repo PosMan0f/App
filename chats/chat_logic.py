@@ -6,9 +6,11 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.clock import Clock
 from kivy.metrics import dp
+from kivy.graphics import Color, RoundedRectangle
 
 from .components import ChatBubble, ChatItem, NewChatPopup
 from .chat_manager import ChatManager
+from ui_style import palette, scale_dp, scale_font
 
 
 class ChatLogic:
@@ -20,7 +22,9 @@ class ChatLogic:
 
         self.main_layout = BoxLayout(orientation='vertical')
         self.content_container = BoxLayout(orientation='vertical')
-
+        self.notice_bar = None
+        self.notice_event = None
+        
         self.main_layout.add_widget(self.content_container)
 
     def set_db_manager(self, db_manager):
@@ -243,22 +247,45 @@ class ChatLogic:
 
     def show_not_authorized_message(self):
         """Показывает сообщение о необходимости авторизации"""
-        from kivy.uix.label import Label
-        from kivy.uix.boxlayout import BoxLayout
-
         self.content_container.clear_widgets()
+        self.show_notice('Сначала войдите в аккаунт', kind='danger')
 
-        message_layout = BoxLayout(orientation='vertical')
-        message_label = Label(
-            text='Для использования чатов необходимо войти в аккаунт\n\nПерейдите в профиль для входа',
+    def _clear_notice(self, *args):
+        if self.notice_event:
+            Clock.unschedule(self.notice_event)
+            self.notice_event = None
+        if self.notice_bar and self.notice_bar.parent:
+            self.main_layout.remove_widget(self.notice_bar)
+        self.notice_bar = None
+
+    def show_notice(self, message: str, kind: str = 'success', duration: float = 2.5):
+        """Показать уведомление снизу экрана."""
+        self._clear_notice()
+        base_color = palette['success'] if kind == 'success' else palette['danger']
+        self.notice_bar = BoxLayout(
             size_hint_y=None,
-            height=200,
-            halign='center',
-            valign='middle',
-            color=(0.8, 0.8, 0.8, 1),
-            font_size=20
+            height=scale_dp(48),
+            padding=[scale_dp(12), scale_dp(8)]
         )
-        message_label.bind(size=message_label.setter('text_size'))
-
-        message_layout.add_widget(message_label)
-        self.content_container.add_widget(message_layout)
+        with self.notice_bar.canvas.before:
+            Color(*base_color)
+            bg = RoundedRectangle(
+                pos=self.notice_bar.pos,
+                size=self.notice_bar.size,
+                radius=[scale_dp(10)] * 4
+            )
+        self.notice_bar.bind(
+            pos=lambda *args: setattr(bg, 'pos', self.notice_bar.pos),
+            size=lambda *args: setattr(bg, 'size', self.notice_bar.size)
+        )
+        notice_label = Label(
+            text=message,
+            color=palette['text_primary'],
+            font_size=scale_font(16),
+            halign='center',
+            valign='middle'
+        )
+        notice_label.bind(size=notice_label.setter('text_size'))
+        self.notice_bar.add_widget(notice_label)
+        self.main_layout.add_widget(self.notice_bar)
+        self.notice_event = Clock.schedule_once(self._clear_notice, duration)

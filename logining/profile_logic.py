@@ -529,7 +529,7 @@ class ProfileLogic:
             background_color=palette['danger'],
             background_normal='',
             background_down='',
-            color=palette['danger'],
+            color=palette['text_primary'],
             font_name='TimesNewRoman'
         )
         logout_btn.bind(on_press=self.logout)
