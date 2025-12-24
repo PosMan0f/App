@@ -123,6 +123,7 @@ class ProfileLogic:
 
     def load_login_form(self):
         """Загружает форму входа"""
+        self.content_container.clear_widgets()
         scroll = ScrollView()
         main_layout = BoxLayout(orientation='vertical', spacing=15, padding=20, size_hint_y=None)
         main_layout.bind(minimum_height=main_layout.setter('height'))
@@ -812,13 +813,9 @@ class ProfileLogic:
 
     def show_message(self, title, message):
         """Показывает сообщение"""
-        popup = Popup(
-            title=title,
-            content=Label(text=message, font_name='TimesNewRoman'),
-            size_hint=(0.6, 0.3),
-            title_font='TimesNewRoman'
-        )
-        popup.open()
+        kind = 'error' if title.lower().startswith('ошиб') else 'success'
+        prefix = f"{title}: " if title else ""
+        self.show_notice(f"{prefix}{message}", kind=kind)
 
     def _clear_notice(self, *args):
         if self.notice_event:

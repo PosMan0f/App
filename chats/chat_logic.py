@@ -139,15 +139,45 @@ class ChatLogic:
 
     def show_message(self, title, text):
         """Показывает сообщение"""
-        from kivy.uix.popup import Popup
-        from kivy.uix.label import Label
+        kind = 'error' if title.lower().startswith('ошиб') else 'success'
+        prefix = f"{title}: " if title else ""
+        self.show_notice(f"{prefix}{text}", kind=kind)
 
-        popup = Popup(
-            title=title,
-            content=Label(text=text),
-            size_hint=(0.6, 0.3)
+        def _clear_notice(self, *args):
+            if self.notice_event:
+                Clock.unschedule(self.notice_event)
+                self.notice_event = None
+            if self.notice_bar and self.notice_bar.parent:
+                self.main_layout.remove_widget(self.notice_bar)
+            self.notice_bar = None
+
+        def show_notice(self, message: str, kind: str = 'success', duration: float = 2.5):
+            """Уведомление снизу экрана вместо всплывающего окна."""
+            self._clear_notice()
+            base_color = palette['success'] if kind == 'success' else palette['danger']
+            self.notice_bar = BoxLayout(
+                size_hint_y=None,
+                height=scale_dp(48),
+                padding=[scale_dp(12), scale_dp(8)]
+            )
+            with self.notice_bar.canvas.before:
+                Color(*base_color)
+                bg = RoundedRectangle(pos=self.notice_bar.pos, size=self.notice_bar.size,
+                                      radius=[scale_dp(10)] * 4)
+            self.notice_bar.bind(
+                pos=lambda *args: setattr(bg, 'pos', self.notice_bar.pos),
+                size=lambda *args: setattr(bg, 'size', self.notice_bar.size)
+            )
+            notice_label = Label(
+                text=message,
+                color=palette['text_primary'],
+                font_size=scale_font(16),
+                halign='center',
         )
-        popup.open()
+        notice_label.bind(size=notice_label.setter('text_size'))
+        self.notice_bar.add_widget(notice_label)
+        self.main_layout.add_widget(self.notice_bar)
+        self.notice_event = Clock.schedule_once(self._clear_notice, duration)
 
     def start_chat(self, user):
         chat_id = self.chat_manager.create_chat(user['uid'])

@@ -5,7 +5,6 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.uix.popup import Popup
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, RoundedRectangle
 import threading
@@ -167,17 +166,9 @@ class BaseTasksTab(TabbedPanelItem):
 
     def show_message(self, title, text, duration=2):
         """Показать всплывающее сообщение"""
-        Clock.schedule_once(lambda dt: self._show_popup(title, text, duration))
-
-    def _show_popup(self, title, text, duration):
-        popup = Popup(
-            title=title,
-            content=Label(text=text, halign='center'),
-            size_hint=(0.7, 0.3),
-            auto_dismiss=True
-        )
-        popup.open()
-        Clock.schedule_once(lambda dt: popup.dismiss(), duration)
+        message = f"{title}: {text}" if title else text
+        kind = 'error' if title.lower().startswith('ошиб') else 'success'
+        Clock.schedule_once(lambda dt: self.show_notice(message, kind=kind, duration=duration))
 
     def _clear_notice(self, *args):
         if self.notice_event:
@@ -187,7 +178,7 @@ class BaseTasksTab(TabbedPanelItem):
             self.content.remove_widget(self.notice_bar)
         self.notice_bar = None
 
-    def show_notice(self, message: str, kind: str = 'success'):
+    def show_notice(self, message: str, kind: str = 'success', duration: float = 2.5):
         """Показать уведомление снизу экрана."""
         self._clear_notice()
         base_color = palette['success'] if kind == 'success' else palette['danger']
@@ -214,7 +205,7 @@ class BaseTasksTab(TabbedPanelItem):
         notice_label.bind(size=notice_label.setter('text_size'))
         self.notice_bar.add_widget(notice_label)
         self.content.add_widget(self.notice_bar)
-        self.notice_event = Clock.schedule_once(self._clear_notice, 2.5)
+        self.notice_event = Clock.schedule_once(self._clear_notice, duration)
 
     def view_task(self, task_id):
         """Просмотр деталей задачи (базовая реализация)"""

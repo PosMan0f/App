@@ -81,3 +81,15 @@ class DefaultScreen(Screen):
 
         # СРАЗУ ПРИВЯЗАТЬ КЛАВИАТУРУ ПОСЛЕ ДОБАВЛЕНИЯ
         Clock.schedule_once(lambda dt: self.game_2048.bind_keyboard(), 0.2)
+
+    def on_enter(self, *args):
+        """При входе на экран"""
+        super().on_enter(*args)
+        if hasattr(self, 'game_2048'):
+            Clock.schedule_once(lambda dt: self.game_2048.bind_keyboard(), 0.1)
+
+    def on_leave(self, *args):
+        """При уходе с экрана"""
+        super().on_leave(*args)
+        if hasattr(self, 'game_2048'):
+            self.game_2048.unbind_keyboard()

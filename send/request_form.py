@@ -2,8 +2,9 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
+from kivy.graphics import Color, RoundedRectangle
 from send.ui_components import *
-from ui_style import scale_dp, palette
+from ui_style import palette, scale_dp, scale_font
 
 
 class RequestForm(BoxLayout):
@@ -63,9 +64,9 @@ class RequestForm(BoxLayout):
         self.submit_button.bind(on_press=self._on_submit)
         self.add_widget(self.submit_button)
 
-        # Метка статуса
-        self.status_label = StatusLabel()
-        self.add_widget(self.status_label)
+        # Уведомление статуса
+        self.notice_bar = None
+        self.notice_event = None
 
     def _on_submit(self, instance):
         """Обработка нажатия кнопки отправки"""
@@ -91,22 +92,49 @@ class RequestForm(BoxLayout):
 
     def show_status(self, message, is_error=False):
         """Показать статус"""
-        self.status_label.text = message
-        self.status_label.height = scale_dp(35)
-        self.status_label.opacity = 1
-
-        if is_error:
-            self.status_label.color = palette['text_primary']
-            self.status_label.set_background(palette['danger'])  # Красный
-        else:
-            self.status_label.color = palette['text_primary']
-            self.status_label.set_background(palette['success'])  # Зеленый
-
-        # Автоматическое скрытие
+        self._clear_notice()
+        base_color = palette['danger'] if is_error else palette['success']
+        self.notice_bar = BoxLayout(
+            size_hint_y=None,
+            height=scale_dp(42),
+            padding=[scale_dp(12), scale_dp(8)]
+        )
+        with self.notice_bar.canvas.before:
+            Color(*base_color)
+            bg = RoundedRectangle(pos=self.notice_bar.pos, size=self.notice_bar.size,
+                                  radius=[scale_dp(10)] * 4)
+        self.notice_bar.bind(
+            pos=lambda *args: setattr(bg, 'pos', self.notice_bar.pos),
+            size=lambda *args: setattr(bg, 'size', self.notice_bar.size)
+        )
+        notice_label = FieldLabel(
+            text=message,
+            color=palette['text_primary'],
+            font_size=scale_font(14),
+            halign='center',
+            valign='middle'
+        )
+        notice_label.bind(size=notice_label.setter('text_size'))
+        self.notice_bar.add_widget(notice_label)
+        self.add_widget(self.notice_bar)
         from kivy.clock import Clock
-        Clock.schedule_once(self._hide_status, 3)
+        self.notice_event = Clock.schedule_once(self._hide_status, 3)
 
     def _hide_status(self, dt):
         """Скрыть статус"""
-        self.status_label.height = scale_dp(0)
-        self.status_label.opacity = 0
+        if self.notice_event:
+            from kivy.clock import Clock
+            Clock.unschedule(self.notice_event)
+            self.notice_event = None
+        if self.notice_bar and self.notice_bar.parent:
+            self.remove_widget(self.notice_bar)
+        self.notice_bar = None
+
+    def _clear_notice(self):
+        if self.notice_event:
+            from kivy.clock import Clock
+            Clock.unschedule(self.notice_event)
+            self.notice_event = None
+        if self.notice_bar and self.notice_bar.parent:
+            self.remove_widget(self.notice_bar)
+        self.notice_bar = None

@@ -139,11 +139,15 @@ class ChatItem(ButtonBehavior, BoxLayout):
         avatar_text = self._get_avatar_letter()
         avatar_label = Label(
             text=avatar_text,
-            pos=(dp(22), dp(24)),
+            pos=(dp(6), dp(10)),
             size_hint=(None, None),
+            size=(dp(40), dp(40)),
             color=(1, 1, 1, 1),
-            font_size=dp(18)
+            font_size=dp(18),
+            halign='center',
+            valign='middle'
         )
+        avatar_label.bind(size=avatar_label.setter('text_size'))
         avatar_layout.add_widget(avatar_label)
 
         info_layout = BoxLayout(orientation='vertical', spacing=dp(4))

@@ -3,7 +3,7 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.spinner import Spinner, SpinnerOption
 from kivy.uix.button import Button
-from kivy.graphics import Color, RoundedRectangle
+from kivy.graphics import Color, RoundedRectangle, Line
 from ui_style import palette, scale_dp, scale_font
 
 
@@ -20,6 +20,13 @@ class ThemedSpinnerOption(SpinnerOption):
         }
         defaults.update(kwargs)
         super().__init__(**defaults)
+        with self.canvas.after:
+            Color(0, 0, 0, 1)
+            self._border = Line(rectangle=(self.x, self.y, self.width, self.height), width=1)
+        self.bind(
+            pos=lambda *args: setattr(self._border, 'rectangle', (self.x, self.y, self.width, self.height)),
+            size=lambda *args: setattr(self._border, 'rectangle', (self.x, self.y, self.width, self.height))
+        )
 
 class BaseLabel(Label):
     """Базовый класс для всех меток"""
@@ -99,6 +106,13 @@ class DepartmentSpinner(Spinner):
         }
         defaults.update(kwargs)
         super().__init__(**defaults)
+        with self.canvas.after:
+            Color(0, 0, 0, 1)
+            self._border = Line(rectangle=(self.x, self.y, self.width, self.height), width=1.2)
+        self.bind(
+            pos=lambda *args: setattr(self._border, 'rectangle', (self.x, self.y, self.width, self.height)),
+            size=lambda *args: setattr(self._border, 'rectangle', (self.x, self.y, self.width, self.height))
+        )
 
 class SubmitButton(Button):
     """Кнопка отправки"""
