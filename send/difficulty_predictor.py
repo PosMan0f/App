@@ -103,19 +103,19 @@ def _heuristic_difficulty(text: str) -> int:
 
 def difficulty_text(raw_value: float) -> str:
     """Текстовое определение сложности по сырому значению."""
-    if raw_value > 2.5:
-        return DIFFICULTY_LABELS[3]
-    if raw_value > 1.5:
+    if raw_value < 1.25:
+        return DIFFICULTY_LABELS[1]
+    if raw_value < 2.10:
         return DIFFICULTY_LABELS[2]
-    return DIFFICULTY_LABELS[1]
+    return DIFFICULTY_LABELS[3]
 
 
 def _difficulty_from_raw(raw_value: float) -> int:
-    if raw_value > 2.5:
-        return 3
-    if raw_value > 1.5:
+    if raw_value < 1.25:
+        return 1
+    if raw_value < 2.10:
         return 2
-    return 1
+    return 3
 
 
 def predict_difficulty(text: str, return_raw: bool = False):

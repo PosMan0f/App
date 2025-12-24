@@ -11,6 +11,7 @@ from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.metrics import dp
 from datetime import datetime
+import colorsys
 from ui_style import palette, scale_dp, scale_font
 from .utils import truncate, LAST_MESSAGE_PREVIEW_LIMIT
 
@@ -128,14 +129,14 @@ class ChatItem(ButtonBehavior, BoxLayout):
 
         avatar_layout = RelativeLayout(size_hint=(None, 1), width=dp(52))
         with avatar_layout.canvas:
-            Color(0.2, 0.6, 1, 1)
+            Color(*self._get_avatar_color())
             RoundedRectangle(
                 pos=(dp(6), dp(10)),
                 size=(dp(40), dp(40)),
                 radius=[dp(12)] * 4
             )
 
-        avatar_text = chat_data.get('name', '?')[0].upper()
+        avatar_text = self._get_avatar_letter()
         avatar_label = Label(
             text=avatar_text,
             pos=(dp(22), dp(24)),
@@ -203,6 +204,31 @@ class ChatItem(ButtonBehavior, BoxLayout):
 
         self.bind(pos=self._update_rect, size=self._update_rect)
         self.bind(state=self._update_state)
+
+    def _get_avatar_letter(self):
+        first_name = (self.chat_data.get('first_name') or '').strip()
+        if first_name:
+            return first_name[0].upper()
+
+        name = (self.chat_data.get('name') or '').strip()
+        if name:
+            name_parts = name.split()
+            if len(name_parts) > 1:
+                return name_parts[1][0].upper()
+            return name[0].upper()
+
+        return '?'
+
+    def _get_avatar_color(self):
+        letter = self._get_avatar_letter()
+        if letter.isalpha():
+            index = ord(letter.upper()) - ord('A')
+            hue = (index % 26) / 26.0
+        else:
+            hue = 0.0
+
+        r, g, b = colorsys.hsv_to_rgb(hue, 0.55, 0.9)
+        return (r, g, b, 1)
 
     def _update_rect(self, *args):
         self.rect.pos = self.pos

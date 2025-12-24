@@ -20,6 +20,7 @@ class ChatScreen(Screen):
 
         # Создаем Database экземпляр
         self.users_db = Database()
+        self.logic.set_db_manager(self.users_db)
 
         # Верхняя панель
         top_panel = BoxLayout(size_hint_y=None, height=scale_dp(50))

@@ -91,13 +91,12 @@ class ChatLogic:
                 user_info = self.db_manager.get_user_by_uid(other_uid) if self.db_manager else None
 
                 if user_info:
-                    name = f"{user_info.get('first_name', '')} {user_info.get('last_name', '')}".strip()
-                    if not name:
-                        name = user_info.get('email', 'Unknown')
+                    name = self._format_user_name(user_info)
+                    chat_data['first_name'] = (user_info.get('first_name') or '').strip()
                     chat_data['name'] = name
                     chat_data['other_user_info'] = user_info
                 else:
-                    chat_data['name'] = f"UID: {other_uid}"
+                    chat_data['name'] = 'Пользователь'
 
                 # Создаем элемент чата
                 from .components import ChatItem
@@ -164,19 +163,22 @@ class ChatLogic:
 
         chat_top = BoxLayout(size_hint_y=None, height=dp(50))
         back_btn = Button(
-            text='← Назад',
-            size_hint_x=0.2,
+            text='Назад',
+            size_hint_x=0.22,
+            background_color=palette['accent'],
+            background_normal='',
+            background_down='',
+            color=palette['text_primary'],
+            font_size=scale_font(16),
             on_press=lambda x: self.show_chat_list()
         )
 
         if other_user_info:
-            name = f"{other_user_info.get('first_name', '')} {other_user_info.get('last_name', '')}".strip()
-            if not name:
-                name = other_user_info.get('email', 'Unknown')
+            name = self._format_user_name(other_user_info)
         else:
             name = 'Собеседник'
 
-        name_label = Label(text=name, font_size=dp(18), color=(1, 1, 1, 1))
+        name_label = Label(text=name, font_size=dp(18), color=palette['text_primary'])
 
         chat_top.add_widget(back_btn)
         chat_top.add_widget(name_label)
@@ -225,8 +227,6 @@ class ChatLogic:
             is_own = message['sender_uid'] == self.chat_manager.current_user['uid']
             bubble = ChatBubble(message, is_own)
             self.messages_layout.add_widget(bubble)
-
-        Clock.schedule_once(lambda dt: setattr(self.messages_scroll, 'scroll_y', 0))
 
     def send_message(self, instance):
         if not self.current_chat_id or not self.message_input.text.strip():
@@ -293,3 +293,16 @@ class ChatLogic:
         self.notice_bar.add_widget(notice_label)
         self.main_layout.add_widget(self.notice_bar)
         self.notice_event = Clock.schedule_once(self._clear_notice, duration)
+
+    @staticmethod
+    def _format_user_name(user_info):
+        first_name = (user_info.get('first_name') or '').strip()
+        last_name = (user_info.get('last_name') or '').strip()
+        name_parts = [part for part in [last_name, first_name] if part]
+        if name_parts:
+            return ' '.join(name_parts)
+        raw_name = (user_info.get('name') or '').strip()
+        if raw_name:
+            return raw_name
+        email = (user_info.get('email') or '').strip()
+        return email or 'Пользователь'
