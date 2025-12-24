@@ -19,6 +19,7 @@ class ChatLogic:
         self.chat_manager = ChatManager()
         self.db_manager = None
         self.current_chat_id = None
+        self.current_chat_info = None
 
         self.main_layout = BoxLayout(orientation='vertical')
         self.content_container = BoxLayout(orientation='vertical')
@@ -35,9 +36,12 @@ class ChatLogic:
         self.chat_manager.set_current_user(user)
 
     def on_enter(self):
-        self.load_chats()
-        # Используем Clock для обновления
-        self._schedule_updates()
+        if self.current_chat_id:
+            self.open_chat_by_id(self.current_chat_id, self.current_chat_info)
+        else:
+            self.load_chats()
+            # Используем Clock для обновления
+            self._schedule_updates()
 
     def _schedule_updates(self):
         """Планирует обновления чатов"""
@@ -189,6 +193,7 @@ class ChatLogic:
 
     def open_chat_by_id(self, chat_id, other_user_info=None):
         self.current_chat_id = chat_id
+        self.current_chat_info = other_user_info
         self.content_container.clear_widgets()
 
         chat_top = BoxLayout(size_hint_y=None, height=dp(50))
@@ -271,6 +276,7 @@ class ChatLogic:
 
     def show_chat_list(self):
         self.current_chat_id = None
+        self.current_chat_info = None
         self._schedule_updates()
         self.load_chats()
 

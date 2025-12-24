@@ -3,6 +3,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.core.window import Window
 from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.behaviors.focus import FocusBehavior
@@ -91,8 +92,13 @@ class Game2048(BoxLayout):
             size_hint=(1, 1),
             spacing=scale_dp(12)
         )
-        self.grid = GridLayout(cols=4, spacing=5, size_hint=(1, 1))
-        self.game_layout.add_widget(self.grid)
+        self.grid_container = FloatLayout(size_hint=(1, 1))
+        self.grid = GridLayout(cols=4, spacing=5, size_hint=(1, 1), pos_hint={"x": 0, "y": 0})
+        self.grid_container.add_widget(self.grid)
+        self.animation_layer = FloatLayout(size_hint=(1, 1), pos_hint={"x": 0, "y": 0})
+        self.grid_container.add_widget(self.animation_layer)
+        self.game_layout.add_widget(self.grid_container)
+        self.grid.bind(pos=self._sync_animation_layer, size=self._sync_animation_layer)
 
         # Контейнер для центрирования кнопки
         button_container = AnchorLayout(
@@ -137,6 +143,7 @@ class Game2048(BoxLayout):
         self.board = np.zeros((4, 4), dtype=int)
         self.cells = []
         self.score = 0
+        self.is_animating = False
         self.init_ui()
         self.restart_game()
 
@@ -222,8 +229,6 @@ class Game2048(BoxLayout):
             for j in range(4):
                 index = i * 4 + j
                 self.update_cell_appearance(self.cells[index], self.board[i][j])
-                if self.display_board is None or self.display_board[i][j] != self.board[i][j]:
-                    self.cells[index].animate_value_change()
         self.display_board = self.board.copy()
 
     def update_score_label(self):
@@ -231,9 +236,108 @@ class Game2048(BoxLayout):
         Animation.cancel_all(self.score_label)
         self.score_label.opacity = 0.6
         Animation(opacity=1, duration=0.2).start(self.score_label)
-        
+
+    def _sync_animation_layer(self, *args):
+        self.animation_layer.pos = self.grid.pos
+        self.animation_layer.size = self.grid.size
+
+    def _animate_move(self, old_board, new_board, direction):
+        moves = self._build_move_map(old_board, direction)
+        self.animation_layer.clear_widgets()
+        moving_tiles = []
+
+        for move in moves:
+            if move["from"] == move["to"]:
+                continue
+            from_index = move["from"][0] * 4 + move["from"][1]
+            to_index = move["to"][0] * 4 + move["to"][1]
+            from_cell = self.cells[from_index]
+            to_cell = self.cells[to_index]
+            tile = GameButton(text="")
+            tile.size_hint = (None, None)
+            tile.size = from_cell.size
+            tile.pos = self.grid.to_parent(*from_cell.pos)
+            self.update_cell_appearance(tile, move["value"])
+            self.animation_layer.add_widget(tile)
+            moving_tiles.append((tile, to_cell))
+
+        if not moving_tiles:
+            self._finish_move(new_board)
+            return
+
+        self.is_animating = True
+        remaining = {"count": len(moving_tiles)}
+
+        def _on_complete(*args):
+            remaining["count"] -= 1
+            if remaining["count"] <= 0:
+                self.animation_layer.clear_widgets()
+                self._finish_move(new_board)
+
+        for tile, to_cell in moving_tiles:
+            end_pos = self.grid.to_parent(*to_cell.pos)
+            anim = Animation(pos=end_pos, duration=0.12, t='out_quad')
+            anim.bind(on_complete=_on_complete)
+            anim.start(tile)
+
+    def _finish_move(self, new_board):
+        self.board = new_board.copy()
+        self.add_random_tile()
+        self.update_display()
+        self.update_score_label()
+        self.is_animating = False
+        self.check_game_over()
+
+    def _build_move_map(self, board, direction):
+        moves = []
+        if direction in ("left", "right"):
+            for row in range(4):
+                line = board[row].tolist()
+                moves.extend(self._build_line_moves(line, row, direction))
+        else:
+            for col in range(4):
+                line = board[:, col].tolist()
+                moves.extend(self._build_line_moves(line, col, direction, vertical=True))
+        return moves
+
+    def _build_line_moves(self, line, fixed_index, direction, vertical=False):
+        tiles = [(value, idx) for idx, value in enumerate(line) if value != 0]
+        moves = []
+        target_index = 0
+        index = 0
+        while index < len(tiles):
+            value, original_idx = tiles[index]
+            if index + 1 < len(tiles) and tiles[index + 1][0] == value:
+                moves.append(self._format_move(fixed_index, original_idx, target_index, direction, vertical, value))
+                moves.append(
+                    self._format_move(fixed_index, tiles[index + 1][1], target_index, direction, vertical, value))
+                index += 2
+            else:
+                moves.append(self._format_move(fixed_index, original_idx, target_index, direction, vertical, value))
+                index += 1
+            target_index += 1
+        return moves
+
+    @staticmethod
+    def _format_move(fixed_index, from_idx, to_idx, direction, vertical, value):
+        if vertical:
+            from_pos = (from_idx, fixed_index)
+            if direction == "up":
+                to_pos = (to_idx, fixed_index)
+            else:
+                to_pos = (3 - to_idx, fixed_index)
+        else:
+            from_pos = (fixed_index, from_idx)
+            if direction == "left":
+                to_pos = (fixed_index, to_idx)
+            else:
+                to_pos = (fixed_index, 3 - to_idx)
+        return {"from": from_pos, "to": to_pos, "value": value}
+
     def move(self, direction):
         """Выполнить ход в указанном направлении"""
+        if self.is_animating:
+            return
         # Создаем копию доски для проверки изменений
         old_board = self.board.copy()
         old_score = self.score
@@ -249,14 +353,11 @@ class Game2048(BoxLayout):
 
         # Если доска изменилась
         if not np.array_equal(old_board, self.board):
+            moved_board = self.board.copy()
             self.last_board = old_board
             self.last_score = old_score
             self.undo_btn.disabled = False
-            self.add_random_tile()
-            self.update_display()
-            self.update_score_label()
-            # Проверяем окончание игры
-            self.check_game_over()
+            self._animate_move(old_board, moved_board, direction)
         else:
             # Если ход не изменил доску, всё равно проверяем
             # Это важно для случаев когда нет возможных ходов
