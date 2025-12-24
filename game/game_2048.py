@@ -4,15 +4,14 @@ from kivy.uix.label import Label
 from kivy.core.window import Window
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.button import Button
+from kivy.uix.textinput import TextInput
+from kivy.uix.behaviors.focus import FocusBehavior
+from kivy.uix.screenmanager import Screen
 from kivy.animation import Animation
 from kivy.graphics import Color, RoundedRectangle
 
 from random import choice, random
 import numpy as np
-
-#import os
-#import sys
-#sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from .game_button import GameButton
 from kivy.clock import Clock
@@ -388,8 +387,39 @@ class Game2048(BoxLayout):
         """Закрытие клавиатуры"""
         self.unbind_keyboard()
 
+    def _get_parent_screen(self):
+        parent = self.parent
+        while parent:
+            if isinstance(parent, Screen):
+                return parent
+            parent = parent.parent
+        return None
+
+    def _is_active_screen(self):
+        screen = self._get_parent_screen()
+        if not screen:
+            return True
+        manager = getattr(screen, "manager", None)
+        if not manager:
+            return True
+        current_screen = getattr(manager, "current_screen", None)
+        if current_screen is not None:
+            return current_screen == screen
+        current_name = getattr(manager, "current", None)
+        if current_name is not None:
+            return current_name == screen.name
+        return True
+
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         """Обработка нажатий клавиш"""
+        if not self._is_active_screen():
+            return False
+        focused_widget = getattr(Window, "focused_widget", None)
+        if focused_widget is None:
+            focused_widget = getattr(FocusBehavior, "_focused_widget", None)
+        if isinstance(focused_widget, TextInput):
+            return False
+
         key = keycode[1].lower()
 
         if key == 'w':

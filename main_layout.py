@@ -130,7 +130,7 @@ class MainLayout(BoxLayout):
         print(self.screen_manager.screen_names)
 
         # Устанавливаем начальный экран
-        self.screen_manager.current = "default"
+        self.screen_manager.current = "messages"
 
     def on_tab_pressed(self, tab_name):
         """Обработка нажатия на кнопку в нижней панели"""

@@ -174,10 +174,10 @@ class ChatLogic:
                 font_size=scale_font(16),
                 halign='center',
         )
-        notice_label.bind(size=notice_label.setter('text_size'))
-        self.notice_bar.add_widget(notice_label)
-        self.main_layout.add_widget(self.notice_bar)
-        self.notice_event = Clock.schedule_once(self._clear_notice, duration)
+            notice_label.bind(size=notice_label.setter('text_size'))
+            self.notice_bar.add_widget(notice_label)
+            self.main_layout.add_widget(self.notice_bar)
+            self.notice_event = Clock.schedule_once(self._clear_notice, duration)
 
     def start_chat(self, user):
         chat_id = self.chat_manager.create_chat(user['uid'])
@@ -257,6 +257,9 @@ class ChatLogic:
             is_own = message['sender_uid'] == self.chat_manager.current_user['uid']
             bubble = ChatBubble(message, is_own)
             self.messages_layout.add_widget(bubble)
+
+        if hasattr(self, 'messages_scroll'):
+            Clock.schedule_once(lambda dt: setattr(self.messages_scroll, 'scroll_y', 0))
 
     def send_message(self, instance):
         if not self.current_chat_id or not self.message_input.text.strip():
