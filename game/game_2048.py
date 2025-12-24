@@ -51,12 +51,12 @@ class Game2048(BoxLayout):
         )
 
         self.undo_btn = Button(
-            text='↶ Вернуть ход',
+            text='Вернуть ход',
             background_normal='',
             background_down='',
             background_color=(0, 0, 0, 0),
             color=palette['text_primary'],
-            font_size=scale_font(14)
+            font_size=scale_font(16)
         )
         self.undo_btn.bind(on_press=self.undo_move)
         self.undo_container.add_widget(self.undo_btn)

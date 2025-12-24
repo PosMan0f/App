@@ -167,10 +167,10 @@ class ApplicationsMainScreen(BoxLayout):
             self.my_tasks_tab.safe_refresh()
 
         # Запускаем автообновление только для авторизованного пользователя
-        if self.task_manager.current_user:
-            self.start_auto_refresh()
-        else:
-            self.stop_auto_refresh()
+        #if self.task_manager.current_user:
+            #self.start_auto_refresh()
+        #else:
+            #self.stop_auto_refresh()
 
     def on_leave(self):
         """При выходе с экрана"""

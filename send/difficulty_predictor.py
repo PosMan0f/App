@@ -103,17 +103,17 @@ def _heuristic_difficulty(text: str) -> int:
 
 def difficulty_text(raw_value: float) -> str:
     """Текстовое определение сложности по сырому значению."""
-    if raw_value > 2.2:
+    if raw_value > 2.5:
         return DIFFICULTY_LABELS[3]
-    if raw_value > 1.2:
+    if raw_value > 1.5:
         return DIFFICULTY_LABELS[2]
     return DIFFICULTY_LABELS[1]
 
 
 def _difficulty_from_raw(raw_value: float) -> int:
-    if raw_value > 2.2:
+    if raw_value > 2.5:
         return 3
-    if raw_value > 1.2:
+    if raw_value > 1.5:
         return 2
     return 1
 
@@ -128,7 +128,9 @@ def predict_difficulty(text: str, return_raw: bool = False):
             return 1, 1.0
         return 1
 
-    if _ml_dependencies_available():
+    if not _ml_dependencies_available():
+        raise RuntimeError("ML модель недоступна для оценки сложности.")
+
         import numpy as np
         import torch
         from sklearn.preprocessing import normalize
@@ -142,24 +144,19 @@ def predict_difficulty(text: str, return_raw: bool = False):
         with torch.no_grad():
             pred = _difficulty_model(x).item()
 
-        pred_round = _difficulty_from_raw(pred)
+    pred_round = _difficulty_from_raw(pred)
 
-        if return_raw:
-            return pred_round, pred
-
-        return pred_round
-
-    pred_round = _heuristic_difficulty(text)
     if return_raw:
-        return pred_round, float(pred_round)
+        return pred_round, pred
 
     return pred_round
 
 
 def _auto_configure_default_model():
-    model_path = Path("ridge_model.pt")
+    model_path = Path(__file__).resolve().parent / "ridge_model.pt"
     if model_path.exists():
         configure_from_checkpoint(str(model_path))
+        print("Model download")
 
 
 _auto_configure_default_model()

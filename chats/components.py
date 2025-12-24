@@ -7,10 +7,12 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.popup import Popup
 from kivy.uix.relativelayout import RelativeLayout
+from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.metrics import dp
 from datetime import datetime
 from ui_style import palette, scale_dp, scale_font
+from .utils import truncate, LAST_MESSAGE_PREVIEW_LIMIT
 
 
 class ChatBubble(BoxLayout):
@@ -18,33 +20,39 @@ class ChatBubble(BoxLayout):
         super().__init__(**kwargs)
         self.orientation = 'horizontal'
         self.size_hint = (1, None)
-        self.height = dp(60)
-        self.padding = [dp(10), dp(5)]
+        self.padding = [dp(12), dp(6), dp(12), dp(6)]
+        self.spacing = dp(8)
+
+        self.is_own = is_own
+        self.bubble_padding = [dp(12), dp(8), dp(12), dp(8)]
+        self.max_bubble_width = Window.width * 0.7
 
         self.message_layout = BoxLayout(
             orientation='vertical',
             size_hint=(None, None),
-            size=(dp(200), dp(50))
+            padding=self.bubble_padding,
+            spacing=dp(4)
         )
 
         self.message_label = Label(
             text=message.get('text', ''),
-            size_hint_y=0.7,
+            size_hint_y=None,
             halign='left',
-            valign='middle',
-            color=(1, 1, 1, 1) if is_own else (0, 0, 0, 1)
+            valign='top',
+            color=(1, 1, 1, 1) if is_own else (0.1, 0.1, 0.1, 1)
         )
-        self.message_label.bind(size=self.message_label.setter('text_size'))
+        self.message_label.bind(texture_size=self._update_message_size)
 
         time_text = self._format_time(message.get('timestamp', ''))
         self.time_label = Label(
             text=time_text,
-            size_hint_y=0.3,
+            size_hint_y=None,
             font_size=dp(10),
-            color=(0.8, 0.8, 0.8, 1),
-            halign='right'
+            color=(0.85, 0.85, 0.85, 1) if is_own else (0.5, 0.5, 0.5, 1),
+            halign='right' if is_own else 'left',
+            valign='bottom'
         )
-        self.time_label.bind(size=self.time_label.setter('text_size'))
+        self.time_label.bind(texture_size=self._update_time_size)
 
         self.message_layout.add_widget(self.message_label)
         self.message_layout.add_widget(self.time_label)
@@ -52,25 +60,18 @@ class ChatBubble(BoxLayout):
         if is_own:
             self.add_widget(BoxLayout(size_hint_x=1))
             self.add_widget(self.message_layout)
-            self.message_layout.canvas.before.clear()
-            with self.message_layout.canvas.before:
-                Color(0.2, 0.6, 1, 1)
-                RoundedRectangle(
-                    pos=self.message_layout.pos,
-                    size=self.message_layout.size,
-                    radius=[dp(10), dp(10), dp(2), dp(10)]
-                )
         else:
             self.add_widget(self.message_layout)
             self.add_widget(BoxLayout(size_hint_x=1))
-            self.message_layout.canvas.before.clear()
-            with self.message_layout.canvas.before:
-                Color(0.9, 0.9, 0.9, 1)
-                RoundedRectangle(
-                    pos=self.message_layout.pos,
-                    size=self.message_layout.size,
-                    radius=[dp(10), dp(10), dp(10), dp(2)]
-                )
+
+        with self.message_layout.canvas.before:
+            self._bubble_color = Color(0.2, 0.6, 1, 1) if is_own else Color(0.92, 0.92, 0.92, 1)
+            self._bubble_rect = RoundedRectangle(pos=self.message_layout.pos, size=self.message_layout.size,
+                                                 radius=[dp(12)] * 4)
+
+        self.message_layout.bind(pos=self._update_bubble_rect, size=self._update_bubble_rect)
+        Window.bind(on_resize=self._on_window_resize)
+        self._update_text_sizes()
 
     def _format_time(self, timestamp):
         try:
@@ -79,73 +80,112 @@ class ChatBubble(BoxLayout):
         except:
             return timestamp
 
+    def _on_window_resize(self, *args):
+        self.max_bubble_width = Window.width * 0.7
+        self._update_text_sizes()
+
+    def _update_text_sizes(self):
+        inner_width = self.max_bubble_width - (self.bubble_padding[0] + self.bubble_padding[2])
+        self.message_label.text_size = (inner_width, None)
+        self.time_label.text_size = (inner_width, None)
+
+    def _update_message_size(self, instance, size):
+        instance.height = size[1]
+        self._update_bubble_size()
+
+    def _update_time_size(self, instance, size):
+        instance.height = size[1]
+        self._update_bubble_size()
+
+    def _update_bubble_size(self):
+        max_text_width = max(self.message_label.texture_size[0], self.time_label.texture_size[0])
+        width = min(self.max_bubble_width, max_text_width + self.bubble_padding[0] + self.bubble_padding[2])
+        self.message_layout.width = width
+        self.message_layout.height = (
+            self.message_label.texture_size[1]
+            + self.time_label.texture_size[1]
+            + self.bubble_padding[1]
+            + self.bubble_padding[3]
+            + dp(4)
+        )
+        self.height = self.message_layout.height + self.padding[1] + self.padding[3]
+
+    def _update_bubble_rect(self, *args):
+        self._bubble_rect.pos = self.message_layout.pos
+        self._bubble_rect.size = self.message_layout.size
+
 
 class ChatItem(ButtonBehavior, BoxLayout):
     def __init__(self, chat_data, **kwargs):
         super().__init__(**kwargs)
         self.orientation = 'horizontal'
         self.size_hint_y = None
-        self.height = dp(80)
-        self.padding = [dp(10), dp(5)]
-        self.spacing = dp(10)
+        self.height = dp(84)
+        self.padding = [dp(12), dp(10), dp(12), dp(10)]
+        self.spacing = dp(12)
 
         self.chat_data = chat_data
 
-        avatar_layout = RelativeLayout(size_hint=(None, 1), width=dp(50))
+        avatar_layout = RelativeLayout(size_hint=(None, 1), width=dp(52))
         with avatar_layout.canvas:
             Color(0.2, 0.6, 1, 1)
             RoundedRectangle(
-                pos=(dp(5), dp(5)),
+                pos=(dp(6), dp(10)),
                 size=(dp(40), dp(40)),
-                radius=[dp(20), dp(20), dp(20), dp(20)]
+                radius=[dp(12)] * 4
             )
 
         avatar_text = chat_data.get('name', '?')[0].upper()
         avatar_label = Label(
             text=avatar_text,
-            pos=(dp(25), dp(25)),
+            pos=(dp(22), dp(24)),
             size_hint=(None, None),
             color=(1, 1, 1, 1),
             font_size=dp(18)
         )
         avatar_layout.add_widget(avatar_label)
 
-        info_layout = BoxLayout(orientation='vertical')
+        info_layout = BoxLayout(orientation='vertical', spacing=dp(4))
         name_label = Label(
             text=chat_data.get('name', 'Unknown'),
-            size_hint_y=0.5,
+            size_hint_y=None,
+            height=dp(22),
             halign='left',
-            valign='middle',
-            color=(1, 1, 1, 1),
+            valign='center',
+            color=(0.95, 0.95, 0.95, 1),
             font_size=dp(16),
-            bold=True
+            bold=True,
+            shorten=True,
+            shorten_from='right'
         )
-        name_label.bind(size=name_label.setter('text_size'))
+        name_label.bind(size=lambda instance, value: setattr(instance, 'text_size', (value[0], None)))
 
-        last_msg = chat_data.get('last_message', '')
-        if len(last_msg) > 40:
-            last_msg = last_msg[:37] + '...'
+        last_msg = truncate(chat_data.get('last_message', ''), LAST_MESSAGE_PREVIEW_LIMIT)
 
         last_msg_label = Label(
             text=last_msg,
-            size_hint_y=0.5,
+            size_hint_y=None,
+            height=dp(20),
             halign='left',
-            valign='middle',
+            valign='center',
             color=(0.8, 0.8, 0.8, 1),
-            font_size=dp(14)
+            font_size=dp(14),
+            shorten=True,
+            shorten_from='right'
         )
-        last_msg_label.bind(size=last_msg_label.setter('text_size'))
+        last_msg_label.bind(size=lambda instance, value: setattr(instance, 'text_size', (value[0], None)))
 
         time_label = Label(
             text=self._format_time(chat_data.get('last_message_time', '')),
-            size_hint=(None, 1),
-            width=dp(60),
+            size_hint=(None, None),
+            width=dp(64),
+            height=dp(18),
             halign='right',
-            valign='top',
+            valign='middle',
             color=(0.6, 0.6, 0.6, 1),
             font_size=dp(12)
         )
-        time_label.bind(size=time_label.setter('text_size'))
+        time_label.bind(size=lambda instance, value: setattr(instance, 'text_size', (value[0], None)))
 
         main_info = BoxLayout(orientation='horizontal')
         main_info.add_widget(info_layout)
@@ -158,14 +198,21 @@ class ChatItem(ButtonBehavior, BoxLayout):
         self.add_widget(main_info)
 
         with self.canvas.before:
-            Color(0.3, 0.3, 0.3, 0.1)
-            self.rect = Rectangle(pos=self.pos, size=self.size)
+            self._bg_color = Color(0.2, 0.2, 0.2, 0.25)
+            self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(12)] * 4)
 
         self.bind(pos=self._update_rect, size=self._update_rect)
+        self.bind(state=self._update_state)
 
     def _update_rect(self, *args):
         self.rect.pos = self.pos
         self.rect.size = self.size
+
+    def _update_state(self, *args):
+        if self.state == 'down':
+            self._bg_color.rgba = (0.3, 0.3, 0.3, 0.35)
+        else:
+            self._bg_color.rgba = (0.2, 0.2, 0.2, 0.25)
 
     def _format_time(self, timestamp):
         try:

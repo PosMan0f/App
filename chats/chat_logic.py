@@ -69,7 +69,7 @@ class ChatLogic:
             return
 
         chats_scroll = ScrollView()
-        chats_layout = GridLayout(cols=1, spacing=dp(5), size_hint_y=None)
+        chats_layout = GridLayout(cols=1, spacing=dp(10), size_hint_y=None, padding=[dp(12), dp(12), dp(12), dp(12)])
         chats_layout.bind(minimum_height=chats_layout.setter('height'))
         chats_scroll.add_widget(chats_layout)
 
@@ -110,7 +110,7 @@ class ChatLogic:
                 chat_item.bind(on_press=create_handler(chat_data))
                 chats_layout.add_widget(chat_item)
 
-            chats_layout.height = len(chats) * dp(85)
+            chats_layout.height = len(chats) * dp(94) + dp(12)
 
         self.content_container.add_widget(chats_scroll)
 
@@ -182,7 +182,12 @@ class ChatLogic:
         chat_top.add_widget(name_label)
 
         self.messages_scroll = ScrollView()
-        self.messages_layout = GridLayout(cols=1, spacing=dp(10), size_hint_y=None)
+        self.messages_layout = GridLayout(
+            cols=1,
+            spacing=dp(10),
+            size_hint_y=None,
+            padding=[dp(12), dp(12), dp(12), dp(12)]
+        )
         self.messages_layout.bind(minimum_height=self.messages_layout.setter('height'))
         self.messages_scroll.add_widget(self.messages_layout)
 
@@ -221,7 +226,6 @@ class ChatLogic:
             bubble = ChatBubble(message, is_own)
             self.messages_layout.add_widget(bubble)
 
-        self.messages_layout.height = len(messages) * dp(65)
         Clock.schedule_once(lambda dt: setattr(self.messages_scroll, 'scroll_y', 0))
 
     def send_message(self, instance):
